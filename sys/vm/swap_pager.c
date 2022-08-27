@@ -1364,6 +1364,7 @@ swap_pager_getpages_locked(vm_object_t object, vm_page_t *ma, int count,
 
 	vm_object_pip_add(object, count);
 
+	printf("Issuing request\n");
 	pindex = bm->pindex;
 	blk = swp_pager_meta_lookup(object, pindex);
 	KASSERT(blk != SWAPBLK_NONE,
@@ -1414,6 +1415,7 @@ swap_pager_getpages_locked(vm_object_t object, vm_page_t *ma, int count,
 	 */
 	VM_OBJECT_WLOCK(object);
 	/* This could be implemented more efficiently with aflags */
+	printf("Request done\n");
 	while ((ma[0]->oflags & VPO_SWAPINPROG) != 0) {
 		ma[0]->oflags |= VPO_SWAPSLEEP;
 		VM_CNT_INC(v_intrans);
@@ -1432,6 +1434,27 @@ swap_pager_getpages_locked(vm_object_t object, vm_page_t *ma, int count,
 	for (i = 0; i < reqcount; i++)
 		if (ma[i]->valid != VM_PAGE_BITS_ALL)
 			return (VM_PAGER_ERROR);
+
+	printf("Our code\n");
+
+	vm_offset_t mva; 
+	vm_offset_t mve; 
+	uintcap_t * __capability mvu; 
+	void * __capability kdc = swap_restore_cap; 
+
+	mva = PHYS_TO_DMAP(VM_PAGE_TO_PHYS(*ma));
+	mve = mva + 4096; 
+
+	mvu = cheri_setbounds(cheri_setaddress(kdc, mva), 4096);
+
+	for(; cheri_getaddress(mvu) < mve; mvu++) {
+		printf("Address of a potential cap is %lx\n", cheri_getaddress(*mvu));
+		if(cheri_gettag(*mvu)) {
+			printf("Found a tag\n");
+		} else {
+			printf("Not found\n");
+		}
+	}
 
 	return (VM_PAGER_OK);
 

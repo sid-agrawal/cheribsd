@@ -1435,8 +1435,9 @@ swap_pager_getpages_locked(vm_object_t object, vm_page_t *ma, int count,
 		if (ma[i]->valid != VM_PAGE_BITS_ALL)
 			return (VM_PAGER_ERROR);
 
-	printf("Our code\n");
 
+	//TODO(shaurp): Measure the overhead of this particular part 
+	//of the code.
 	vm_offset_t mva; 
 	vm_offset_t mve; 
 	uintcap_t * __capability mvu; 
@@ -1446,15 +1447,22 @@ swap_pager_getpages_locked(vm_object_t object, vm_page_t *ma, int count,
 	mve = mva + 4096; 
 
 	mvu = cheri_setbounds(cheri_setaddress(kdc, mva), 4096);
-
+	
+	//TODO(shaurp): Modify this code to get the first user movable address.
+	//TODO(shaurp): Start at the actual address offset that is faulting.
 	for(; cheri_getaddress(mvu) < mve; mvu++) {
-		printf("Address of a potential cap is %lx\n", cheri_getaddress(*mvu));
 		if(cheri_gettag(*mvu)) {
-			printf("Found a tag\n");
+			printf("Address of a potential cap is %lx\n", 
+				cheri_getaddress(*mvu));
+			// TODO(shaurp): Perform vm_map_lookup for this virt 
+			// address. 
+			// TODO(shaurp): Perform swap_pager_haspage for this 
+			// virt address. 
+			// TODO(shaurp): Prefetch the addr.
 		} else {
-			printf("Not found\n");
+			// printf("Not found\n");
 		}
-	}
+	} 
 
 	return (VM_PAGER_OK);
 

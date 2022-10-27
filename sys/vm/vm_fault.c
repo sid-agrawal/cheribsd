@@ -122,6 +122,7 @@ __FBSDID("$FreeBSD$");
 struct faultstate {
 	/* Fault parameters. */
 	vm_offset_t	vaddr;
+	vm_offset_t	actual_vaddr;
 	vm_page_t	*m_hold;
 	vm_prot_t	fault_type;
 	vm_prot_t	prot;
@@ -671,7 +672,7 @@ vm_fault_trap(vm_map_t map, vm_offset_t vaddr, vm_prot_t fault_type,
 	if (map != kernel_map && KTRPOINT(curthread, KTR_FAULT))
 		ktrfault(vaddr, fault_type);
 #endif
-	result = vm_fault(map, trunc_page(vaddr), fault_type, fault_flags,
+	result = vm_fault(map, vaddr,trunc_page(vaddr), fault_type, fault_flags,
 	    NULL);
 	KASSERT(result == KERN_SUCCESS || result == KERN_FAILURE ||
 	    result == KERN_INVALID_ADDRESS ||
@@ -1338,6 +1339,55 @@ vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
 	*behindp = behind;
 	*aheadp = ahead;
 	rv = vm_pager_get_pages(fs->object, &fs->m, 1, behindp, aheadp);
+	// TODO(shaurp): We only want to do this for the swap pager. 
+	if(rv == VM_PAGER_OK) {	
+		//TODO(shaurp): Measure the overhead of this particular part 
+		//of the code.
+		vm_offset_t mva; 
+		vm_offset_t mve; 
+		uintcap_t * __capability mvu; 
+		void * __capability kdc = swap_restore_cap; 
+
+		mva = PHYS_TO_DMAP(VM_PAGE_TO_PHYS(fs->m));
+		mve = mva + 4096; 
+
+		mvu = cheri_setbounds(cheri_setaddress(kdc, mva), 4096);
+		
+		//TODO(shaurp): Modify this code to get the first user movable address.
+		//TODO(shaurp): Start at the actual address offset that is faulting.
+		for(; cheri_getaddress(mvu) < mve; mvu++) {
+			if(cheri_gettag(*mvu)) {
+				printf("Address of a cap is %lx\n", 
+					cheri_getaddress(*mvu));
+				// TODO(shaurp): Perform vm_map_lookup for this virt 
+				// address. 
+				vm_object_t obj; 
+				vm_pindex_t pindex;
+				vm_map_entry_t entry; 
+				vm_prot_t prot; 
+				boolean_t wired; 
+				int result = vm_map_lookup(&fs->map, cheri_getaddress(*mvu), 
+						fs->fault_type, &entry, &obj, &pindex, 
+						&prot, &wired);
+
+				if(result != KERN_SUCCESS) {
+					continue; 
+				}
+				// TODO(shaurp): Perform swap_pager_haspage for this 
+				// virt address. 
+				VM_OBJECT_WLOCK(obj);
+				int before = 0, after = 0; 
+				boolean_t bool_page = pagertab[obj->type]->pgo_haspage(obj, pindex, &before, &after);
+				VM_OBJECT_WUNLOCK(obj);
+				printf("Page in swap? %d\n", bool_page); 
+				// TODO(shaurp): Prefetch the addr.
+				// TODO(shaurp): Just reuse the async impl here.
+			} else {
+				//printf("Not found\n");
+			}
+		}
+	}
+
 	if (rv == VM_PAGER_OK)
 		return (FAULT_HARD);
 	if (rv == VM_PAGER_ERROR)
@@ -1485,9 +1535,10 @@ vm_fault_object(struct faultstate *fs, int *behindp, int *aheadp)
 }
 
 int
-vm_fault(vm_map_t map, vm_offset_t vaddr, vm_prot_t fault_type,
+vm_fault(vm_map_t map, vm_offset_t actual_vaddr, vm_offset_t vaddr, vm_prot_t fault_type,
     int fault_flags, vm_page_t *m_hold)
 {
+	// TODO(shaurp): The vaddr here is the page address not the exact addr.
 	struct faultstate fs;
 	int ahead, behind, faultcount, rv;
 	enum fault_status res;
@@ -1500,6 +1551,7 @@ vm_fault(vm_map_t map, vm_offset_t vaddr, vm_prot_t fault_type,
 
 	fs.vp = NULL;
 	fs.vaddr = vaddr;
+	fs.actual_vaddr = actual_vaddr; 
 	fs.m_hold = m_hold;
 	fs.fault_flags = fault_flags;
 	fs.map = map;
@@ -1996,7 +2048,7 @@ vm_fault_quick_hold_pages(vm_map_t map, void * __capability addr, vm_size_t len,
 		    (curthread->td_pflags & TDP_NOFAULTING) != 0)
 			goto error;
 		for (mp = ma, va = start; va < end; mp++, va += PAGE_SIZE)
-			if (*mp == NULL && vm_fault(map, va, prot,
+			if (*mp == NULL && vm_fault(map, va, va, prot,
 			    VM_FAULT_NORMAL, mp) != KERN_SUCCESS)
 				goto error;
 	}

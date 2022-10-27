@@ -2166,6 +2166,7 @@ core_output(char * __capability base_cap, size_t len, off_t offset,
 			if (core_dump_can_intr && curproc_sigkilled())
 				return (EINTR);
 			error = vm_fault(map, (uintptr_t)base + runlen,
+(uintptr_t)base + runlen,
 			    VM_PROT_READ, VM_FAULT_NOFILL, NULL);
 			if (runlen == 0)
 				success = error == KERN_SUCCESS;

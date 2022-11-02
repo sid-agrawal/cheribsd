@@ -1359,11 +1359,10 @@ vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
 	}
 	*behindp = behind;
 	*aheadp = ahead;
-	behindp = 0;
-	aheadp = 0;
-	rv = vm_pager_get_pages(fs->object, &fs->m, 1, behindp, aheadp);
 	
-	 if(rv == VM_PAGER_OK && fs->object->type == OBJT_SWAP) {	
+	rv = vm_pager_get_pages(fs->object, &fs->m, 1, behindp, aheadp);
+	 
+	if(rv == VM_PAGER_OK && fs->object->type == OBJT_SWAP) {	
 		vm_offset_t mva; 
 		vm_offset_t mve; 
 		uintcap_t * __capability mvu; 
@@ -1374,7 +1373,7 @@ vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
 
 		mvu = cheri_setbounds(cheri_setaddress(kdc, mva), PAGE_SIZE);
 		// TODO(shaurp): Start from the faulting addr.
-		// mvu += (fs->actual_vaddr - fs->vaddr);
+		mvu += (fs->actual_vaddr - fs->vaddr);
 		int count = 0;
 		// vm_map_lock(fs->map);
 		for(; cheri_getaddress(mvu) < mve && count < 4; mvu++) {
@@ -1401,14 +1400,16 @@ vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
 					vm_map_lookup_done(fs->map, entry);
 					continue; 
 				} 
-				int before = 0, after = 0;
+				//int before = 0, after = 0;
+				// TODO(shaurp): Duplicate, either remove this
+				// or remove the one in async swap.
+				//boolean_t page_found_in_swap = vm_pager_has_page
+				//	(obj, pindex, &before, &after);
 
-				boolean_t page_found_in_swap = vm_pager_has_page
-					(obj, pindex, &before, &after);
-
-				if(page_found_in_swap) {
+				//if(page_found_in_swap) {
 					// printf("Address of a cap in swap is %lx\n", 
 					// cheri_getaddress(*mvu));
+
 					vm_page_t p;
 					p = vm_page_lookup(obj, pindex);
 					if(p != NULL) {
@@ -1432,16 +1433,17 @@ vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
 								, NULL, NULL);
 						if(result == VM_PAGER_OK) {
 							++count;
-							// printf("Page prefetched\n");
+							printf("Page prefetched\n");
 						} else {
 							printf("Page not prefetched %d\n", result);
 						}
 
 						vm_map_lookup_done(fs->map, entry);
 						continue;
-					} 
+					}
 
-				} 				
+
+				// }				
 				VM_OBJECT_WUNLOCK(obj);
 				vm_map_lookup_done(fs->map, entry);
 			}

@@ -8,6 +8,11 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(TARGET "" CACHE STRING "Target machine.")
 set(TARGET_ARCH "" CACHE STRING "Target machine arch.")
 
+# Use the below two options to generate compile commands.
+# Create a build folder and run cmake .. from inside it.
+#set(TARGET "arm64")
+#set(TARGET_ARCH "aarch64")
+
 if (NOT TARGET)
     message(FATAL_ERROR "TARGET must be set!")
 endif()

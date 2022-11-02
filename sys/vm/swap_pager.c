@@ -1316,7 +1316,6 @@ static int
 swap_pager_getpages_locked(vm_object_t object, vm_page_t *ma, int count,
     int *rbehind, int *rahead)
 {
-	// TODO(shaurp): This is the code we potentially will change.
 	struct buf *bp;
 	vm_page_t bm, mpred, msucc, p;
 	vm_pindex_t pindex;
@@ -1400,7 +1399,7 @@ swap_pager_getpages_locked(vm_object_t object, vm_page_t *ma, int count,
 
 	vm_object_pip_add(object, count);
 
-	printf("Issuing request\n");
+	// printf("Issuing request\n");
 	pindex = bm->pindex;
 	blk = swp_pager_meta_lookup(object, pindex);
 	KASSERT(blk != SWAPBLK_NONE,
@@ -1451,7 +1450,7 @@ swap_pager_getpages_locked(vm_object_t object, vm_page_t *ma, int count,
 	 */
 	VM_OBJECT_WLOCK(object);
 	/* This could be implemented more efficiently with aflags */
-	printf("Request done\n");
+	// printf("Request done\n");
 	while ((ma[0]->oflags & VPO_SWAPINPROG) != 0) {
 		ma[0]->oflags |= VPO_SWAPSLEEP;
 		VM_CNT_INC(v_intrans);
@@ -1468,38 +1467,13 @@ swap_pager_getpages_locked(vm_object_t object, vm_page_t *ma, int count,
 	 * If we had an unrecoverable read error pages will not be valid.
 	 */
 	for (i = 0; i < reqcount; i++)
-		if (ma[i]->valid != VM_PAGE_BITS_ALL)
+		if (ma[i]->valid != VM_PAGE_BITS_ALL) {
+			printf("Page bits are invalid %d\n", ma[i]->valid);
 			return (VM_PAGER_ERROR);
-
-
-	//TODO(shaurp): Measure the overhead of this particular part 
-	//of the code.
-	vm_offset_t mva; 
-	vm_offset_t mve; 
-	uintcap_t * __capability mvu; 
-	void * __capability kdc = swap_restore_cap; 
-
-	mva = PHYS_TO_DMAP(VM_PAGE_TO_PHYS(*ma));
-	mve = mva + 4096; 
-
-	mvu = cheri_setbounds(cheri_setaddress(kdc, mva), 4096);
-	
-	//TODO(shaurp): Modify this code to get the first user movable address.
-	//TODO(shaurp): Start at the actual address offset that is faulting.
-	for(; cheri_getaddress(mvu) < mve; mvu++) {
-		if(cheri_gettag(*mvu)) {
-			printf("Address of a potential cap is %lx\n", 
-				cheri_getaddress(*mvu));
-			// TODO(shaurp): Perform vm_map_lookup for this virt 
-			// address. 
-			// TODO(shaurp): Perform swap_pager_haspage for this 
-			// virt address. 
-			// TODO(shaurp): Prefetch the addr.
-		} else {
-			// printf("Not found\n");
 		}
-	} 
 
+
+	
 	return (VM_PAGER_OK);
 
 	/*
@@ -1529,7 +1503,8 @@ static int
 swap_pager_getpages_async(vm_object_t object, vm_page_t *ma, int count,
     int *rbehind, int *rahead, pgo_getpages_iodone_t iodone, void *arg)
 {
-	int r, error;
+	// XXX: Reused this function because it wasn't doing anything useful.
+	/* int r, error;
 
 	r = swap_pager_getpages(object, ma, count, rbehind, rahead);
 	switch (r) {
@@ -1546,8 +1521,87 @@ swap_pager_getpages_async(vm_object_t object, vm_page_t *ma, int count,
 		panic("unhandled swap_pager_getpages() error %d", r);
 	}
 	(iodone)(arg, ma, count, error);
+	*/ 
+	struct buf *bp;
+	vm_page_t bm, p;
+	vm_pindex_t pindex;
+	daddr_t blk;
+	int i, maxahead, maxbehind, reqcount;
+	VM_OBJECT_WLOCK(object);
+	VM_OBJECT_ASSERT_WLOCKED(object);
+	reqcount = count;
 
-	return (r);
+	KASSERT((object->flags & OBJ_SWAP) != 0,
+	    ("%s: object not swappable", __func__));
+	if (!swap_pager_haspage(object, ma[0]->pindex, &maxbehind, &maxahead)) {
+		VM_OBJECT_WUNLOCK(object);
+		return (VM_PAGER_FAIL);
+	}
+
+	KASSERT(reqcount - 1 <= maxahead,
+	    ("page count %d extends beyond swap block", reqcount));
+
+	bm = ma[0];
+	for (i = 0; i < count; i++)
+		ma[i]->oflags |= VPO_SWAPINPROG;
+
+	// TODO(shaurp): Is this needed?
+	// vm_object_pip_add(object, count);
+
+	// printf("Issuing request asych\n");
+	pindex = bm->pindex;
+	blk = swp_pager_meta_lookup(object, pindex);
+	KASSERT(blk != SWAPBLK_NONE,
+	    ("no swap blocking containing %p(%jx)", object, (uintmax_t)pindex));
+
+	VM_OBJECT_WUNLOCK(object);
+	bp = uma_zalloc(swrbuf_zone, M_WAITOK);
+	MPASS((bp->b_flags & B_MAXPHYS) != 0);
+	/* Pages cannot leave the object while busy. */
+	for (i = 0, p = bm; i < count; i++, p = TAILQ_NEXT(p, listq)) {
+		MPASS(p->pindex == bm->pindex + i);
+		bp->b_pages[i] = p;
+	}
+
+	bp->b_flags |= B_PAGING;
+	bp->b_iocmd = BIO_READ;
+	bp->b_iodone = swp_pager_async_iodone;
+	bp->b_rcred = crhold(thread0.td_ucred);
+	bp->b_wcred = crhold(thread0.td_ucred);
+	bp->b_blkno = blk;
+	bp->b_bcount = PAGE_SIZE * count;
+	bp->b_bufsize = PAGE_SIZE * count;
+	bp->b_npages = count;
+	bp->b_pgbefore = rbehind != NULL ? *rbehind : 0;
+	bp->b_pgafter = rahead != NULL ? *rahead : 0;
+
+	VM_CNT_INC(v_swapin);
+	VM_CNT_ADD(v_swappgsin, count);
+
+	/*
+	 * perform the I/O.  NOTE!!!  bp cannot be considered valid after
+	 * this point because we automatically release it on completion.
+	 * Instead, we look at the one page we are interested in which we
+	 * still hold a lock on even through the I/O completion.
+	 *
+	 * The other pages in our ma[] array are also released on completion,
+	 * so we cannot assume they are valid anymore either.
+	 *
+	 * NOTE: b_blkno is destroyed by the call to swapdev_strategy
+	 */
+	BUF_KERNPROC(bp);
+	swp_pager_strategy(bp);
+
+	/*
+	 * If we had an unrecoverable read error pages will not be valid.
+	 */
+	/* for (i = 0; i < reqcount; i++)
+		if (ma[i]->valid != VM_PAGE_BITS_ALL)
+			return (VM_PAGER_ERROR); */
+
+
+	return (VM_PAGER_OK);
+	// return (r);
 }
 
 /*
@@ -1859,6 +1913,7 @@ swp_pager_async_iodone(struct buf *bp)
 		mtx_unlock(&swbuf_mtx);
 	}
 	uma_zfree((bp->b_iocmd == BIO_READ) ? swrbuf_zone : swwbuf_zone, bp);
+	// printf("Async IO completed\n");
 }
 
 int

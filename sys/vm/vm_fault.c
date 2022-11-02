@@ -1359,52 +1359,91 @@ vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
 	}
 	*behindp = behind;
 	*aheadp = ahead;
+	behindp = 0;
+	aheadp = 0;
 	rv = vm_pager_get_pages(fs->object, &fs->m, 1, behindp, aheadp);
-	// TODO(shaurp): We only want to do this for the swap pager. 
-	if(rv == VM_PAGER_OK) {	
-		//TODO(shaurp): Measure the overhead of this particular part 
-		//of the code.
+	
+	 if(rv == VM_PAGER_OK && fs->object->type == OBJT_SWAP) {	
 		vm_offset_t mva; 
 		vm_offset_t mve; 
 		uintcap_t * __capability mvu; 
 		void * __capability kdc = swap_restore_cap; 
 
 		mva = PHYS_TO_DMAP(VM_PAGE_TO_PHYS(fs->m));
-		mve = mva + 4096; 
+		mve = mva + PAGE_SIZE; 
 
-		mvu = cheri_setbounds(cheri_setaddress(kdc, mva), 4096);
-		
-		//TODO(shaurp): Modify this code to get the first user movable address.
-		//TODO(shaurp): Start at the actual address offset that is faulting.
-		for(; cheri_getaddress(mvu) < mve; mvu++) {
+		mvu = cheri_setbounds(cheri_setaddress(kdc, mva), PAGE_SIZE);
+		// TODO(shaurp): Start from the faulting addr.
+		// mvu += (fs->actual_vaddr - fs->vaddr);
+		int count = 0;
+		// vm_map_lock(fs->map);
+		for(; cheri_getaddress(mvu) < mve && count < 4; mvu++) {
 			if(cheri_gettag(*mvu)) {
-				printf("Address of a cap is %lx\n", 
-					cheri_getaddress(*mvu));
-				// TODO(shaurp): Perform vm_map_lookup for this virt 
-				// address. 
 				vm_object_t obj; 
 				vm_pindex_t pindex;
 				vm_map_entry_t entry; 
 				vm_prot_t prot; 
-				boolean_t wired; 
-				int result = vm_map_lookup(&fs->map, cheri_getaddress(*mvu), 
-						fs->fault_type, &entry, &obj, &pindex, 
+				boolean_t wired;
+				int result = vm_map_lookup(&fs->map, 
+						cheri_getaddress(*mvu), 
+						VM_PROT_READ, &entry, &obj, &pindex, 
 						&prot, &wired);
-
+				
+				
 				if(result != KERN_SUCCESS) {
 					continue; 
 				}
-				// TODO(shaurp): Perform swap_pager_haspage for this 
-				// virt address. 
+				
 				VM_OBJECT_WLOCK(obj);
-				int before = 0, after = 0; 
-				boolean_t bool_page = pagertab[obj->type]->pgo_haspage(obj, pindex, &before, &after);
+				
+				if(obj->type != OBJT_SWAP) {
+					VM_OBJECT_WUNLOCK(obj);
+					vm_map_lookup_done(fs->map, entry);
+					continue; 
+				} 
+				int before = 0, after = 0;
+
+				boolean_t page_found_in_swap = vm_pager_has_page
+					(obj, pindex, &before, &after);
+
+				if(page_found_in_swap) {
+					// printf("Address of a cap in swap is %lx\n", 
+					// cheri_getaddress(*mvu));
+					vm_page_t p;
+					p = vm_page_lookup(obj, pindex);
+					if(p != NULL) {
+						
+						// printf("Page already in mem");
+					
+					}
+					else {
+						p = vm_page_alloc(obj, pindex,
+							VM_ALLOC_NORMAL);
+						
+						if(p == NULL) 
+							break;
+
+						// p->oflags |= VPO_SWAPINPROG;
+						vm_object_pip_add(obj, 1);
+						VM_OBJECT_WUNLOCK(obj);
+						result = 
+							vm_pager_get_pages_async(obj, 
+								&p, 1, NULL, NULL
+								, NULL, NULL);
+						if(result == VM_PAGER_OK) {
+							++count;
+							// printf("Page prefetched\n");
+						} else {
+							printf("Page not prefetched %d\n", result);
+						}
+
+						vm_map_lookup_done(fs->map, entry);
+						continue;
+					} 
+
+				} 				
 				VM_OBJECT_WUNLOCK(obj);
-				printf("Page in swap? %d\n", bool_page); 
-				// TODO(shaurp): Prefetch the addr.
-				// TODO(shaurp): Just reuse the async impl here.
-			} else {
-				//printf("Not found\n");
+				vm_map_lookup_done(fs->map, entry);
 			}
 		}
 	}
@@ -1509,6 +1548,8 @@ vm_fault_object(struct faultstate *fs, int *behindp, int *aheadp)
 		 * done.
 		 */
 		if (vm_page_all_valid(fs->m)) {
+			// TODO(shaurp): This is the soft fault code path.
+			// printf("Soft fault\n");
 			VM_OBJECT_WUNLOCK(fs->object);
 			return (FAULT_SOFT);
 		}
@@ -2332,3 +2373,5 @@ vm_fault_enable_pagefaults(int save)
 //   "change_comment": ""
 // }
 // CHERI CHANGES END
+
+

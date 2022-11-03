@@ -494,6 +494,7 @@ SYSCTL_INT(_vm, OID_AUTO, dmmax, CTLFLAG_RD, &nsw_cluster_max, 0,
 
 static void	swp_sizecheck(void);
 static void	swp_pager_async_iodone(struct buf *bp);
+static void	swp_pager_async_cheri_iodone(struct buf *bp);
 static bool	swp_pager_swblk_empty(struct swblk *sb, int start, int limit);
 static void	swp_pager_free_empty_swblk(vm_object_t, struct swblk *sb);
 static int	swapongeom(struct vnode *);
@@ -1529,7 +1530,7 @@ swap_pager_getpages_async(vm_object_t object, vm_page_t *ma, int count,
 
 	bp->b_flags |= B_PAGING;
 	bp->b_iocmd = BIO_READ;
-	bp->b_iodone = swp_pager_async_iodone;
+	bp->b_iodone = swp_pager_async_cheri_iodone;
 	bp->b_rcred = crhold(thread0.td_ucred);
 	bp->b_wcred = crhold(thread0.td_ucred);
 	bp->b_blkno = blk;
@@ -1555,17 +1556,9 @@ swap_pager_getpages_async(vm_object_t object, vm_page_t *ma, int count,
 	 */
 	BUF_KERNPROC(bp);
 	swp_pager_strategy(bp);
-
-	/*
-	 * If we had an unrecoverable read error pages will not be valid.
-	 */
-	/* for (i = 0; i < reqcount; i++)
-		if (ma[i]->valid != VM_PAGE_BITS_ALL)
-			return (VM_PAGER_ERROR); */
-
+	
 
 	return (VM_PAGER_OK);
-	// return (r);
 }
 
 /*
@@ -1735,6 +1728,165 @@ swap_pager_putpages(vm_object_t object, vm_page_t *ma, int count,
 	}
 	swp_pager_freeswapspace(s_free, n_free);
 	VM_OBJECT_WLOCK(object);
+}
+
+/*
+ *	swp_pager_async_cheri_iodone:
+ *
+ *	Completion routine for asynchronous reads and writes from/to swap.
+ *	Also called manually by synchronous code to finish up a bp.
+ *
+ *	This routine may not sleep.
+ */
+static void
+swp_pager_async_cheri_iodone(struct buf *bp)
+{
+	int i;
+	vm_object_t object = NULL;
+
+	/*
+	 * Report error - unless we ran out of memory, in which case
+	 * we've already logged it in swapgeom_strategy().
+	 */
+	if (bp->b_ioflags & BIO_ERROR && bp->b_error != ENOMEM) {
+		printf(
+		    "swap_pager: I/O error - %s failed; blkno %ld,"
+			"size %ld, error %d\n",
+		    ((bp->b_iocmd == BIO_READ) ? "pagein" : "pageout"),
+		    (long)bp->b_blkno,
+		    (long)bp->b_bcount,
+		    bp->b_error
+		);
+	}
+
+	/*
+	 * remove the mapping for kernel virtual
+	 */
+	if (buf_mapped(bp))
+		pmap_qremove((vm_offset_t)bp->b_data, bp->b_npages);
+	else
+		bp->b_data = bp->b_kvabase;
+
+	if (bp->b_npages) {
+		object = bp->b_pages[0]->object;
+		VM_OBJECT_WLOCK(object);
+	}
+
+	/*
+	 * cleanup pages.  If an error occurs writing to swap, we are in
+	 * very serious trouble.  If it happens to be a disk error, though,
+	 * we may be able to recover by reassigning the swap later on.  So
+	 * in this case we remove the m->swapblk assignment for the page
+	 * but do not free it in the rlist.  The errornous block(s) are thus
+	 * never reallocated as swap.  Redirty the page and continue.
+	 */
+	for (i = 0; i < bp->b_npages; ++i) {
+		vm_page_t m = bp->b_pages[i];
+
+		m->oflags &= ~VPO_SWAPINPROG;
+		if (m->oflags & VPO_SWAPSLEEP) {
+			m->oflags &= ~VPO_SWAPSLEEP;
+			wakeup(&object->handle);
+		}
+
+		/* We always have space after I/O, successful or not. */
+		vm_page_aflag_set(m, PGA_SWAP_SPACE);
+
+		if (bp->b_ioflags & BIO_ERROR) {
+			/*
+			 * If an error occurs I'd love to throw the swapblk
+			 * away without freeing it back to swapspace, so it
+			 * can never be used again.  But I can't from an
+			 * interrupt.
+			 */
+			if (bp->b_iocmd == BIO_READ) {
+				/*
+				 * NOTE: for reads, m->dirty will probably
+				 * be overridden by the original caller of
+				 * getpages so don't play cute tricks here.
+				 */
+				vm_page_invalid(m);
+			} else {
+				/*
+				 * If a write error occurs, reactivate page
+				 * so it doesn't clog the inactive list,
+				 * then finish the I/O.
+				 */
+				MPASS(m->dirty == VM_PAGE_BITS_ALL);
+
+				/* PQ_UNSWAPPABLE? */
+				vm_page_activate(m);
+				vm_page_sunbusy(m);
+			}
+		} else if (bp->b_iocmd == BIO_READ) {
+			/*
+			 * NOTE: for reads, m->dirty will probably be
+			 * overridden by the original caller of getpages so
+			 * we cannot set them in order to free the underlying
+			 * swap in a low-swap situation.  I don't think we'd
+			 * want to do that anyway, but it was an optimization
+			 * that existed in the old swapper for a time before
+			 * it got ripped out due to precisely this problem.
+			 */
+			KASSERT(!pmap_page_is_mapped(m),
+			    ("swp_pager_async_iodone: page %p is mapped", m));
+			KASSERT(m->dirty == 0,
+			    ("swp_pager_async_iodone: page %p is dirty", m));
+#if __has_feature(capabilities)
+			swp_pager_meta_cheri_get_tags(m);
+#endif
+
+			vm_page_valid(m);
+			// if (i < bp->b_pgbefore ||
+			//     i >= bp->b_npages - bp->b_pgafter)
+			vm_page_readahead_finish(m);
+		} else {
+			/*
+			 * For write success, clear the dirty
+			 * status, then finish the I/O ( which decrements the
+			 * busy count and possibly wakes waiter's up ).
+			 * A page is only written to swap after a period of
+			 * inactivity.  Therefore, we do not expect it to be
+			 * reused.
+			 */
+			KASSERT(!pmap_page_is_write_mapped(m),
+			    ("swp_pager_async_iodone: page %p is not write"
+			    " protected", m));
+			vm_page_undirty(m);
+			vm_page_deactivate_noreuse(m);
+			vm_page_sunbusy(m);
+		}
+	}
+
+	/*
+	 * adjust pip.  NOTE: the original parent may still have its own
+	 * pip refs on the object.
+	 */
+	if (object != NULL) {
+		vm_object_pip_wakeupn(object, bp->b_npages);
+		VM_OBJECT_WUNLOCK(object);
+	}
+
+	/*
+	 * swapdev_strategy() manually sets b_vp and b_bufobj before calling
+	 * bstrategy(). Set them back to NULL now we're done with it, or we'll
+	 * trigger a KASSERT in relpbuf().
+	 */
+	if (bp->b_vp) {
+		    bp->b_vp = NULL;
+		    bp->b_bufobj = NULL;
+	}
+	/*
+	 * release the physical I/O buffer
+	 */
+	if (bp->b_flags & B_ASYNC) {
+		mtx_lock(&swbuf_mtx);
+		if (++nsw_wcount_async == 1)
+			wakeup(&nsw_wcount_async);
+		mtx_unlock(&swbuf_mtx);
+	}
+	uma_zfree((bp->b_iocmd == BIO_READ) ? swrbuf_zone : swwbuf_zone, bp);
+	// printf("Async IO completed\n");
 }
 
 /*

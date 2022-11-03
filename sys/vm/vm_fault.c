@@ -1359,7 +1359,8 @@ vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
 	}
 	*behindp = behind;
 	*aheadp = ahead;
-	
+	*behindp = 0; 
+	*aheadp = 0;
 	rv = vm_pager_get_pages(fs->object, &fs->m, 1, behindp, aheadp);
 	 
 	if(rv == VM_PAGER_OK && fs->object->type == OBJT_SWAP) {	
@@ -1418,28 +1419,29 @@ vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
 					
 					}
 					else {
+
 						p = vm_page_alloc(obj, pindex,
 							VM_ALLOC_NORMAL);
 						
 						if(p == NULL) 
 							break;
 
-						// p->oflags |= VPO_SWAPINPROG;
+						p->oflags |= VPO_SWAPINPROG;
 						vm_object_pip_add(obj, 1);
 						VM_OBJECT_WUNLOCK(obj);
-						result = 
-							vm_pager_get_pages_async(obj, 
+						result = vm_pager_get_pages_async(obj, 
 								&p, 1, NULL, NULL
 								, NULL, NULL);
 						if(result == VM_PAGER_OK) {
 							++count;
-							printf("Page prefetched\n");
+							printf("Page prefetched %d\n", count);
 						} else {
 							printf("Page not prefetched %d\n", result);
 						}
 
 						vm_map_lookup_done(fs->map, entry);
 						continue;
+
 					}
 
 

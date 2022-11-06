@@ -1352,19 +1352,22 @@ vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
 		mve = mva + PAGE_SIZE; 
 
 		mvu = cheri_setbounds(cheri_setaddress(kdc, mva), PAGE_SIZE);
-		// TODO(shaurp): Start from the faulting addr.
 		mvu += (fs->actual_vaddr - fs->vaddr);
 		int count = 0;
 		// vm_map_lock(fs->map);
 		for(; cheri_getaddress(mvu) < mve && count < 4; mvu++) {
 			if(cheri_gettag(*mvu)) {
+				if(trunc_page(cheri_getaddress(mvu)) == fs->vaddr)
+					continue;
+				
 				vm_object_t obj; 
 				vm_pindex_t pindex;
 				vm_map_entry_t entry; 
 				vm_prot_t prot; 
 				boolean_t wired;
-				int result = vm_map_lookup(&fs->map, 
-						cheri_getaddress(*mvu), 
+				// printf("Calling map lookup\n");
+				int result = vm_map_lookup_prefetch(&fs->map, 
+						trunc_page(cheri_getaddress(*mvu)), 
 						VM_PROT_READ, &entry, &obj, &pindex, 
 						&prot, &wired);
 				
@@ -1375,11 +1378,11 @@ vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
 				
 				VM_OBJECT_WLOCK(obj);
 				
-				if(obj->type != OBJT_SWAP) {
+				/* if(obj->type != OBJT_SWAP) {
 					VM_OBJECT_WUNLOCK(obj);
 					vm_map_lookup_done(fs->map, entry);
 					continue; 
-				} 
+				} */
 				//int before = 0, after = 0;
 				// TODO(shaurp): Duplicate, either remove this
 				// or remove the one in async swap.
@@ -1389,7 +1392,7 @@ vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
 				//if(page_found_in_swap) {
 					// printf("Address of a cap in swap is %lx\n", 
 					// cheri_getaddress(*mvu));
-
+					printf("Calling page lookup\n");
 					vm_page_t p;
 					p = vm_page_lookup(obj, pindex);
 					if(p != NULL) {
@@ -1398,26 +1401,35 @@ vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
 					
 					}
 					else {
-
+						// printf("Attempting to prefetch\n");
 						p = vm_page_alloc(obj, pindex,
 							VM_ALLOC_NORMAL);
 						
 						if(p == NULL) 
 							break;
 
+						// We need exclusive access to this page.
+						/* if(!vm_page_tryxbusy(p)) {
+							printf("Couldn't get exclusive access\n");
+							// vm_page_free(p);
+							break;
+						} */
+
 						p->oflags |= VPO_SWAPINPROG;
 						vm_object_pip_add(obj, 1);
 						VM_OBJECT_WUNLOCK(obj);
 						result = vm_pager_get_pages_async(obj, 
 								&p, 1, NULL, NULL
-								, NULL, NULL);
+								,NULL, NULL);
 						if(result == VM_PAGER_OK) {
 							++count;
 							printf("Page prefetched %d\n", count);
 						} else {
 							printf("Page not prefetched %d\n", result);
+							VM_OBJECT_WLOCK(obj);
+							vm_page_free(p);
+							VM_OBJECT_WUNLOCK(obj);
 						}
-
 						vm_map_lookup_done(fs->map, entry);
 						continue;
 

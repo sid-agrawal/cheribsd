@@ -5513,6 +5513,128 @@ vmspace_unshare(struct proc *p)
 	vmspace_free(oldvmspace);
 	return (0);
 }
+/*
+ *	vm_map_lookup_prefetch:
+ *
+ *	Finds the VM object, offset, and
+ *	protection for a given virtual address in the
+ *	specified map, assuming that we already want an object to exist.
+ *
+ *	Leaves the map in question locked for read; return
+ *	values are guaranteed until a vm_map_lookup_done
+ *	call is performed.  Note that the map argument
+ *	is in/out; the returned map must be used in
+ *	the call to vm_map_lookup_done.
+ *
+ *	A handle (out_entry) is returned for use in
+ *	vm_map_lookup_done, to make that fast.
+ *	
+ *	Also performs check whether the object is in swap.
+ */
+int
+vm_map_lookup_prefetch(vm_map_t *var_map,		/* IN/OUT */
+	      vm_offset_t vaddr,
+	      vm_prot_t fault_typea,
+	      vm_map_entry_t *out_entry,	/* OUT */
+	      vm_object_t *object,		/* OUT */
+	      vm_pindex_t *pindex,		/* OUT */
+	      vm_prot_t *out_prot,		/* OUT */
+	      boolean_t *wired)			/* OUT */
+{
+	vm_map_entry_t entry;
+	vm_map_t map = *var_map;
+	vm_prot_t prot;
+	vm_prot_t fault_type;
+	vm_size_t size;
+
+RetryLookup:
+
+	vm_map_lock_read(map);
+
+RetryLookupLocked:
+	/*
+	 * Lookup the faulting address.
+	 */
+	if (!vm_map_lookup_entry(map, vaddr, out_entry)) {
+		vm_map_unlock_read(map);
+		return (KERN_INVALID_ADDRESS);
+	}
+
+	entry = *out_entry;
+
+	/*
+	 * Handle submaps.
+	 */
+	if (entry->eflags & MAP_ENTRY_IS_SUB_MAP) {
+		vm_map_t old_map = map;
+
+		*var_map = map = entry->object.sub_map;
+		vm_map_unlock_read(old_map);
+		goto RetryLookup;
+	}
+
+	/*
+	 * Check whether this task is allowed to have this page.
+	 * TODO(shaurp): What should we really check here?
+	 */
+	prot = entry->protection;
+	if ((fault_typea & VM_PROT_FAULT_LOOKUP) != 0) {
+		fault_typea &= ~VM_PROT_FAULT_LOOKUP;
+		if (prot == VM_PROT_NONE && map != kernel_map &&
+		    (entry->eflags & MAP_ENTRY_GUARD) != 0 &&
+		    (entry->eflags & (MAP_ENTRY_STACK_GAP_DN |
+		    MAP_ENTRY_STACK_GAP_UP)) != 0 &&
+		    vm_map_growstack(map, vaddr, entry) == KERN_SUCCESS)
+			goto RetryLookupLocked;
+	}
+	fault_type = fault_typea & VM_PROT_ALL;
+	if ((fault_type & prot) != fault_type || prot == VM_PROT_NONE) {
+		vm_map_unlock_read(map);
+		return (KERN_PROTECTION_FAILURE);
+	}
+	KASSERT((prot & VM_PROT_WRITE) == 0 || (entry->eflags &
+	    (MAP_ENTRY_USER_WIRED | MAP_ENTRY_NEEDS_COPY)) !=
+	    (MAP_ENTRY_USER_WIRED | MAP_ENTRY_NEEDS_COPY),
+	    ("entry %p flags %x", entry, entry->eflags));
+	if ((fault_typea & VM_PROT_COPY) != 0 &&
+	    (entry->max_protection & VM_PROT_WRITE) == 0 &&
+	    (entry->eflags & MAP_ENTRY_COW) == 0) {
+		vm_map_unlock_read(map);
+		return (KERN_PROTECTION_FAILURE);
+	}
+
+	/*
+	 * If this page is not pageable, we have to get it for all possible
+	 * accesses.
+	 */
+	*wired = (entry->wired_count != 0);
+	if (*wired)
+		fault_type = entry->protection;
+	size = entry->end - entry->start;
+
+	/*
+	 * Check if an object already exists.
+	 */
+	if (entry->object.vm_object == NULL && !map->system_map) {
+		vm_map_unlock_read(map);
+		return (KERN_FAILURE);
+	}	
+
+	if(entry->object.vm_object->type != OBJT_SWAP) {
+		vm_map_unlock_read(map);
+		return (KERN_FAILURE);
+	}
+	/*
+	 * Return the object/offset from this entry.  If the entry was
+	 * copy-on-write or empty, it has been fixed up.
+	 */
+	*pindex = OFF_TO_IDX((vaddr - entry->start) + entry->offset);
+	*object = entry->object.vm_object;
+
+	*out_prot = prot;
+	return (KERN_SUCCESS);
+}
+
 
 /*
  *	vm_map_lookup:

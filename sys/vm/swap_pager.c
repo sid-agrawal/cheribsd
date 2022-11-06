@@ -1505,24 +1505,7 @@ swap_pager_getpages_async(vm_object_t object, vm_page_t *ma, int count,
     int *rbehind, int *rahead, pgo_getpages_iodone_t iodone, void *arg)
 {
 	// XXX: Reused this function because it wasn't doing anything useful.
-	/* int r, error;
-
-	r = swap_pager_getpages(object, ma, count, rbehind, rahead);
-	switch (r) {
-	case VM_PAGER_OK:
-		error = 0;
-		break;
-	case VM_PAGER_ERROR:
-		error = EIO;
-		break;
-	case VM_PAGER_FAIL:
-		error = EINVAL;
-		break;
-	default:
-		panic("unhandled swap_pager_getpages() error %d", r);
-	}
-	(iodone)(arg, ma, count, error);
-	*/ 
+	
 	struct buf *bp;
 	vm_page_t bm, p;
 	vm_pindex_t pindex;
@@ -1546,10 +1529,6 @@ swap_pager_getpages_async(vm_object_t object, vm_page_t *ma, int count,
 	for (i = 0; i < count; i++)
 		ma[i]->oflags |= VPO_SWAPINPROG;
 
-	// TODO(shaurp): Is this needed?
-	// vm_object_pip_add(object, count);
-
-	// printf("Issuing request asych\n");
 	pindex = bm->pindex;
 	blk = swp_pager_meta_lookup(object, pindex);
 	KASSERT(blk != SWAPBLK_NONE,
@@ -1559,6 +1538,8 @@ swap_pager_getpages_async(vm_object_t object, vm_page_t *ma, int count,
 	bp = uma_zalloc(swrbuf_zone, M_WAITOK);
 	MPASS((bp->b_flags & B_MAXPHYS) != 0);
 	/* Pages cannot leave the object while busy. */
+	KASSERT(count == 1, ("Count was not 1 for async prefetch"));
+	
 	for (i = 0, p = bm; i < count; i++, p = TAILQ_NEXT(p, listq)) {
 		MPASS(p->pindex == bm->pindex + i);
 		bp->b_pages[i] = p;

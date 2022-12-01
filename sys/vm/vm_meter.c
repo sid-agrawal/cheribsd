@@ -68,6 +68,11 @@ struct vmmeter __read_mostly vm_cnt = {
 	.v_io_faults = EARLY_COUNTER,
 	.v_cow_faults = EARLY_COUNTER,
 	.v_cow_optim = EARLY_COUNTER,
+        .v_softfault = EARLY_COUNTER,
+        .v_majfault = EARLY_COUNTER,
+        .v_prefetch = EARLY_COUNTER,
+        .v_noprefetch = EARLY_COUNTER,
+
 	.v_zfod = EARLY_COUNTER,
 	.v_ozfod = EARLY_COUNTER,
 	.v_swapin = EARLY_COUNTER,

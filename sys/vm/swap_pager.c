@@ -1428,6 +1428,7 @@ swap_pager_getpages_locked(vm_object_t object, vm_page_t *ma, int count,
 	bp->b_pgafter = rahead != NULL ? *rahead : 0;
 
 	VM_CNT_INC(v_swapin);
+	printf("Swap in %lu\n", VM_CNT_FETCH(v_swapin));
 	VM_CNT_ADD(v_swappgsin, count);
 
 	/*
@@ -1734,8 +1735,7 @@ swap_pager_putpages(vm_object_t object, vm_page_t *ma, int count,
 /*
  *	swp_pager_async_cheri_iodone:
  *
- *	Completion routine for asynchronous reads and writes from/to swap.
- *	Also called manually by synchronous code to finish up a bp.
+ *	Completion routine for cheri prefetch reads and writes from/to swap.
  *
  *	This routine may not sleep.
  */

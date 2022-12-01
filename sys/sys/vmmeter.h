@@ -94,6 +94,10 @@ struct vmmeter {
 	counter_u64_t v_cow_optim;	/* (p) optimized COW faults */
 	counter_u64_t v_zfod;		/* (p) pages zero filled on demand */
 	counter_u64_t v_ozfod;		/* (p) optimized zero fill pages */
+	counter_u64_t v_majfault;       /* (p) major page fault */
+        counter_u64_t v_softfault;      /* (p) soft page faults */
+        counter_u64_t v_prefetch;       /* (p) soft page faults */
+	counter_u64_t v_noprefetch;     /* (p) soft page faults */
 	counter_u64_t v_swapin;		/* (p) swap pager pageins */
 	counter_u64_t v_swapout;	/* (p) swap pager pageouts */
 	counter_u64_t v_swappgsin;	/* (p) swap pager pages paged in */
@@ -236,3 +240,4 @@ vm_page_count_min_set(const domainset_t *mask)
 
 #endif	/* _KERNEL */
 #endif	/* _SYS_VMMETER_H_ */
+

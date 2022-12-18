@@ -5545,7 +5545,6 @@ vm_map_lookup_prefetch(vm_map_t *var_map,		/* IN/OUT */
 	vm_map_t map = *var_map;
 	vm_prot_t prot;
 	vm_prot_t fault_type;
-	vm_size_t size;
 
 RetryLookup:
 
@@ -5610,7 +5609,6 @@ RetryLookupLocked:
 	*wired = (entry->wired_count != 0);
 	if (*wired)
 		fault_type = entry->protection;
-	size = entry->end - entry->start;
 
 	/*
 	 * Check if an object already exists.

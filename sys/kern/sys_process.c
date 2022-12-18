@@ -500,7 +500,7 @@ proc_read_cheri_tags_page(vm_map_t map, vm_offset_t va, void *tagbuf,
 	 * Fault in the next page, but only if it already exists.  If
 	 * the page doesn't exist, fill the tag buffer with zeroes.
 	 */
-	error = vm_fault(map, va, VM_PROT_READ, VM_FAULT_NOFILL, &m);
+	error = vm_fault(map, va, va, VM_PROT_READ, VM_FAULT_NOFILL, &m);
 	if (error == KERN_PAGE_NOT_FILLED) {
 		memset(tagbuf, 0, TAG_BYTES_PER_PAGE);
 		*hastagsp = false;
@@ -589,7 +589,7 @@ proc_read_cheri_cap_page(vm_map_t map, vm_offset_t va, struct uio *uio)
 	todo = MIN(todo, uio->uio_resid);
 	va = trunc_page(va);
 
-	error = vm_fault(map, va, VM_PROT_READ, VM_FAULT_NOFILL, &m);
+	error = vm_fault(map, va, va, VM_PROT_READ, VM_FAULT_NOFILL, &m);
 	if (error == KERN_PAGE_NOT_FILLED) {
 		memset(capbuf, 0, sizeof(capbuf));
 		while (todo > 0) {

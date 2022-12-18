@@ -1284,7 +1284,7 @@ vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
 {
 	vm_offset_t e_end, e_start;
 	int ahead, behind, rv;
-	// int cluster_offset;
+	int cluster_offset;
 	enum fault_status status;
 	u_char behavior;
 
@@ -1360,10 +1360,10 @@ vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
 			 * block than alignment to a virtual
 			 * address boundary.
 			 */
-			/* cluster_offset = fs->pindex % VM_FAULT_READ_DEFAULT;
+			cluster_offset = fs->pindex % VM_FAULT_READ_DEFAULT;
 			behind = ulmin(cluster_offset,
 			    atop(fs->vaddr - e_start));
-			ahead = VM_FAULT_READ_DEFAULT - 1 - cluster_offset; */
+			ahead = VM_FAULT_READ_DEFAULT - 1 - cluster_offset;
 		}
 		ahead = ulmin(ahead, atop(e_end - fs->vaddr) - 1);
 		printf("Count is %d\n", ahead);

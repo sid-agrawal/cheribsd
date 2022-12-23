@@ -5531,6 +5531,7 @@ vmspace_unshare(struct proc *p)
  *	
  *	Also performs check whether the object is in swap.
  */
+/*Q(siagraw): How is this different from the next func ?*/
 int
 vm_map_lookup_prefetch(vm_map_t *var_map,		/* IN/OUT */
 	      vm_offset_t vaddr,

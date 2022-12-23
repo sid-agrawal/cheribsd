@@ -1334,6 +1334,8 @@ vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
 	 * Page in the requested page and hint the pager,
 	 * that it may bring up surrounding pages.
 	 */
+
+	/* Q(siagraw): Don't we always overide this ?*/
 	behind = 0; 
 	ahead = 0;
 	if (fs->nera == -1 || behavior == MAP_ENTRY_BEHAV_RANDOM ||

@@ -1504,6 +1504,7 @@ swap_pager_getpages(vm_object_t object, vm_page_t *ma, int count,
 static int
 swap_pager_getpages_async(vm_object_t object, vm_page_t *ma, int count,
     int *rbehind, int *rahead, pgo_getpages_iodone_t iodone, void *arg)
+/*Q(siagraw): Shouldn't we be calling iodone in the end ?*/
 {
 	// XXX: Reused this function because it wasn't doing anything useful.
 	
@@ -1739,6 +1740,7 @@ swap_pager_putpages(vm_object_t object, vm_page_t *ma, int count,
  *
  *	This routine may not sleep.
  */
+/*Q(siagraw): This looks like a copy of the next function, anything different here?*/
 static void
 swp_pager_async_cheri_iodone(struct buf *bp)
 {

@@ -13,13 +13,15 @@ struct node *ll[num_nodes];
 struct node *ll_head, *ll_curr;
 
 int main() {
+	sleep(10);
 	void *temp;	
 	for(int i = 0; i < num_nodes; i++) {
 		//if(i % 100000) 
 		//	printf("Something\n");
 		ll[i] = malloc(sizeof(struct node));
 		
-	} 
+	}
+	printf("Running\n"); 
 	// ll = (struct node *) malloc(sizeof(malloc(sizeof(struct node) * num_nodes)));
 	FILE* ptr; 
 	char ch; 

@@ -405,7 +405,7 @@ vm_fault_soft_fast(struct faultstate *fs)
 	vm_fault_dirty(fs, m);
 	vm_map_lookup_done(fs->map, fs->entry);
 	VM_CNT_INC(v_softfault);
-	printf("Softfault in fast path %lu\n", VM_CNT_FETCH(v_softfault));
+	//printf("Softfault in fast path %lu\n", VM_CNT_FETCH(v_softfault));
 	curthread->td_ru.ru_minflt++;
 
 out:
@@ -1282,9 +1282,10 @@ vm_fault_allocate(struct faultstate *fs)
 static enum fault_status
 vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
 {
-	vm_offset_t e_end, e_start;
+	vm_offset_t e_end;  
+		    //e_start;
 	int ahead, behind, rv;
-	int cluster_offset;
+	//int cluster_offset;
 	enum fault_status status;
 	u_char behavior;
 
@@ -1296,7 +1297,7 @@ vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
 	 * unlocking the map, using the saved addresses is
 	 * safe.
 	 */
-	e_start = fs->entry->start;
+	//e_start = fs->entry->start;
 	e_end = fs->entry->end;
 	behavior = vm_map_entry_behavior(fs->entry);
 
@@ -1362,29 +1363,27 @@ vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
 			 * block than alignment to a virtual
 			 * address boundary.
 			 */
-			cluster_offset = fs->pindex % VM_FAULT_READ_DEFAULT;
+			/* cluster_offset = fs->pindex % VM_FAULT_READ_DEFAULT;
 			behind = ulmin(cluster_offset,
 			    atop(fs->vaddr - e_start));
-			ahead = VM_FAULT_READ_DEFAULT - 1 - cluster_offset;
+			ahead = VM_FAULT_READ_DEFAULT - 1 - cluster_offset;*/
 		}
 		ahead = ulmin(ahead, atop(e_end - fs->vaddr) - 1);
-		printf("Count is %d\n", ahead);
+		//printf("Count is %d\n", ahead);
 
 	}
 	*behindp = behind;
 	*aheadp = ahead;
 	rv = vm_pager_get_pages(fs->object, &fs->m, 1, behindp, aheadp);
 
-	printf("Condition %d\n" , rv == VM_PAGER_OK); 
-	printf("Condition %d\n" , fs->object->type == OBJT_SWAP ); 
-	printf("Condition %d\n" , !sequential); 
-	if(rv == VM_PAGER_OK && fs->object->type == OBJT_SWAP && !sequential && !P_KILLED(curproc)) {
-		printf("Running prefetcher\n");
+	if(rv == VM_PAGER_OK && fs->object->type == OBJT_SWAP && !sequential && !P_KILLED(curproc) && !pctrie_is_empty(&fs->object->un_pager.swp.swp_blks)) {
+		//printf("Running prefetcher\n");
 		vm_offset_t mva; 
 		vm_offset_t mve; 
 		uintcap_t * __capability mvu; 
 		void * __capability kdc = swap_restore_cap; 
 
+		//printf("Is process killed %d\n", P_KILLED(curproc));
 		mva = PHYS_TO_DMAP(VM_PAGE_TO_PHYS(fs->m));
 		mve = mva + PAGE_SIZE; 
 
@@ -1394,12 +1393,11 @@ vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
 		
 		int count = 0;
 		// vm_map_lock(fs->map);
-		printf("mvu is %lu, mve is %lu\n", cheri_getaddress(mvu), mve);	
+		//printf("mvu is %lu, mve is %lu\n", cheri_getaddress(mvu), mve);	
 		for(; cheri_getaddress(mvu) < mve && count < 4; mvu++) {
 			if(cheri_gettag(*mvu)) {
 				if(trunc_page(cheri_getaddress(mvu)) == fs->vaddr)
 					continue;
-				printf("Running loop\n");	
 				vm_object_t obj; 
 				vm_pindex_t pindex;
 				vm_map_entry_t entry; 
@@ -1416,8 +1414,8 @@ vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
 					continue; 
 				}
 				
-				printf("Running loop address is %lu\n",
-						cheri_getaddress(mvu));
+				//printf("Running loop address is %lu\n",
+				//		cheri_getaddress(mvu));
 				
 				VM_OBJECT_WLOCK(obj);
 				
@@ -1440,11 +1438,10 @@ vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
 					p = vm_page_lookup(obj, pindex);
 					if(p != NULL) {
 				
-						printf("Page already in mem");
+						//printf("Page already in mem\n");
 					
 					}
 					else {
-						printf("Attempting to prefetch\n");
 						p = vm_page_alloc(obj, pindex,
 							VM_ALLOC_NORMAL);
 						
@@ -1466,9 +1463,9 @@ vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
 								,NULL, NULL);
 						if(result == VM_PAGER_OK) {
 							++count;
-							printf("Page prefetched %d\n", count);
+							//printf("Page prefetched %d\n", count);
 						} else {
-							printf("Page not prefetched %d\n", result);
+							//printf("Page not prefetched %d\n", result);
 							VM_OBJECT_WLOCK(obj);
 							vm_page_free(p);
 							VM_OBJECT_WUNLOCK(obj);
@@ -1588,7 +1585,7 @@ vm_fault_object(struct faultstate *fs, int *behindp, int *aheadp)
 		if (vm_page_all_valid(fs->m)) {
 			// TODO(shaurp): This is the soft fault code path.
 			VM_CNT_INC(v_softfault);
-			printf("Soft fault inside fault object %lu\n", VM_CNT_FETCH(v_softfault));
+			//printf("Soft fault inside fault object %lu\n", VM_CNT_FETCH(v_softfault));
 			VM_OBJECT_WUNLOCK(fs->object);
 			return (FAULT_SOFT);
 		}
@@ -2412,5 +2409,7 @@ vm_fault_enable_pagefaults(int save)
 //   "change_comment": ""
 // }
 // CHERI CHANGES END
+
+
 
 

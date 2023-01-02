@@ -1338,7 +1338,7 @@ vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
 
 	/* Q(siagraw): Don't we always overide this ?*/
 	behind = 0; 
-	ahead = 0;
+	ahead = 0; 
 	if (fs->nera == -1 || behavior == MAP_ENTRY_BEHAV_RANDOM ||
 	    P_KILLED(curproc)) {
 		behind = 0;
@@ -1349,7 +1349,8 @@ vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
 			behind = 0;
 			ahead = fs->nera;
 			if(fs->object->type == OBJT_SWAP) {
-                                printf("Sequential Prefetch %lu\n", VM_CNT_FETCH(v_prefetch));
+                                printf("Sequential Prefetch %lu\n", 
+						VM_CNT_FETCH(v_prefetch));
                         }
 			sequential = 1; 
 		} else {
@@ -1376,7 +1377,9 @@ vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
 	*aheadp = ahead;
 	rv = vm_pager_get_pages(fs->object, &fs->m, 1, behindp, aheadp);
 
-	if(rv == VM_PAGER_OK && fs->object->type == OBJT_SWAP && !sequential && !P_KILLED(curproc) && !pctrie_is_empty(&fs->object->un_pager.swp.swp_blks)) {
+	if (rv == VM_PAGER_OK && fs->object->type == OBJT_SWAP && 
+			!sequential && !P_KILLED(curproc) && 
+			!pctrie_is_empty(&fs->object->un_pager.swp.swp_blks)) {
 		//printf("Running prefetcher\n");
 		vm_offset_t mva; 
 		vm_offset_t mve; 
@@ -1396,7 +1399,8 @@ vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
 		//printf("mvu is %lu, mve is %lu\n", cheri_getaddress(mvu), mve);	
 		for(; cheri_getaddress(mvu) < mve && count < 4; mvu++) {
 			if(cheri_gettag(*mvu)) {
-				if(trunc_page(cheri_getaddress(mvu)) == fs->vaddr)
+				if (trunc_page(cheri_getaddress(mvu)) == 
+						fs->vaddr)
 					continue;
 				vm_object_t obj; 
 				vm_pindex_t pindex;
@@ -1405,12 +1409,12 @@ vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
 				boolean_t wired;
 				// printf("Calling map lookup\n");
 				int result = vm_map_lookup_prefetch(&fs->map, 
-						trunc_page(cheri_getaddress(*mvu)), 
-						VM_PROT_READ, &entry, &obj, &pindex, 
-						&prot, &wired);
+						trunc_page(cheri_getaddress(*mvu))
+						, VM_PROT_READ, &entry, &obj, 
+						&pindex, &prot, &wired);
 				
 				
-				if(result != KERN_SUCCESS) {
+				if (result != KERN_SUCCESS) {
 					continue; 
 				}
 				
@@ -1468,6 +1472,7 @@ vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
 							//printf("Page not prefetched %d\n", result);
 							VM_OBJECT_WLOCK(obj);
 							vm_page_free(p);
+							vm_object_pip_wakeup(obj);	
 							VM_OBJECT_WUNLOCK(obj);
 						}
 						vm_map_lookup_done(fs->map, entry);

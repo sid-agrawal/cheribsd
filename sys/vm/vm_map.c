@@ -5530,6 +5530,15 @@ vmspace_unshare(struct proc *p)
  *	vm_map_lookup_done, to make that fast.
  *	
  *	Also performs check whether the object is in swap.
+ *	There are two reasons why we add this code - 
+ *	1. If a page contains pointers to pages that 
+ *	have not been accessed by the application yet, we 
+ *	don't want to allocate objects for those pages and 
+ *	prefetch them.
+ *	2. We potentially have no way of knowing what permissions
+ *	to assign to the new object in case we make a new one.
+ *	This function is based on faultstate, and potentially 
+ *	invalid access has already been taken care of.
  */
 /*Q(siagraw): How is this different from the next func ?*/
 int

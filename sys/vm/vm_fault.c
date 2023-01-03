@@ -1349,8 +1349,8 @@ vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
 			behind = 0;
 			ahead = fs->nera;
 			if(fs->object->type == OBJT_SWAP) {
-                                printf("Sequential Prefetch %lu\n", 
-						VM_CNT_FETCH(v_prefetch));
+                               // printf("Sequential Prefetch %lu\n", 
+				//		VM_CNT_FETCH(v_prefetch));
                         }
 			sequential = 1; 
 		} else {

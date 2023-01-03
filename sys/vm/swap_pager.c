@@ -1428,7 +1428,7 @@ swap_pager_getpages_locked(vm_object_t object, vm_page_t *ma, int count,
 	bp->b_pgafter = rahead != NULL ? *rahead : 0;
 
 	VM_CNT_INC(v_swapin);
-	printf("Swap in %lu\n", VM_CNT_FETCH(v_swapin));
+	// printf("Swap in %lu\n", VM_CNT_FETCH(v_swapin));
 	VM_CNT_ADD(v_swappgsin, count);
 
 	/*
@@ -1504,7 +1504,6 @@ swap_pager_getpages(vm_object_t object, vm_page_t *ma, int count,
 static int
 swap_pager_getpages_async(vm_object_t object, vm_page_t *ma, int count,
     int *rbehind, int *rahead, pgo_getpages_iodone_t iodone, void *arg)
-/*Q(siagraw): Shouldn't we be calling iodone in the end ?*/
 {
 	// XXX: Reused this function because it wasn't doing anything useful.
 	

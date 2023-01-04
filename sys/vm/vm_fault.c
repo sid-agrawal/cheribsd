@@ -1398,7 +1398,7 @@ vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
 		//printf("mvu is %lu, mve is %lu\n", cheri_getaddress(mvu), mve);	
 		for(; cheri_getaddress(mvu) < mve && count < 1; mvu++) {
 			if(cheri_gettag(*mvu)) {
-				vm_offset_t vaddr = cheri_getaddress(mvu);
+				vm_offset_t vaddr = cheri_getaddress(*mvu);
 				if (trunc_page(vaddr) == 
 						fs->vaddr)
 					continue;

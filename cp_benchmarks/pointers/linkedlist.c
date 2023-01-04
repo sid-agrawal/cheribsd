@@ -1,20 +1,20 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-
+#include <time.h>
+#include <sys/resource.h>
 struct node {
 	int arr[1020];
 	struct node *next; 
 };
 
-#define num_nodes 786433
+#define num_nodes 1310721
 struct node *ll[num_nodes];
 struct node *ll_head, *ll_curr;
 
 int main() {
-	sleep(10);
 	void *temp;	
+	clock_t start = clock();
 	for(int i = 0; i < num_nodes; i++) {
 		//if(i % 100000) 
 		//	printf("Something\n");
@@ -25,7 +25,7 @@ int main() {
 	// ll = (struct node *) malloc(sizeof(malloc(sizeof(struct node) * num_nodes)));
 	FILE* ptr; 
 	char ch; 
-	ptr = fopen("random_array", "r");
+	ptr = fopen("random_array_5G", "r");
 
 	if(ptr == NULL) {
 		printf("File not found\n");
@@ -74,7 +74,9 @@ int main() {
 		count++;
 	}
 
-	printf("Count is %d\n", count); 
+	clock_t end = clock();
+	float seconds = (float)(end - start) / CLOCKS_PER_SEC;
+	printf("Count is %d and time taken is %fs\n", count, seconds); 
 	return 0;	
 
 }

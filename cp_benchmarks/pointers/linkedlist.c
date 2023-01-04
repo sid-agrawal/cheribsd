@@ -4,9 +4,9 @@
 #include <time.h>
 #include <sys/resource.h>
 struct node {
-	int arr[1020];
 	struct node *next; 
-};
+	int arr[1020];
+}__attribute__((aligned (4096)));
 
 #define num_nodes 1310721
 struct node *ll[num_nodes];

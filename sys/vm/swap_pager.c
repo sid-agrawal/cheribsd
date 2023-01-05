@@ -1317,6 +1317,7 @@ static int
 swap_pager_getpages_locked(vm_object_t object, vm_page_t *ma, int count,
     int *rbehind, int *rahead)
 {
+	time_t start = time(NULL);
 	struct buf *bp;
 	vm_page_t bm, mpred, msucc, p;
 	vm_pindex_t pindex;
@@ -1474,7 +1475,9 @@ swap_pager_getpages_locked(vm_object_t object, vm_page_t *ma, int count,
 			return (VM_PAGER_ERROR);
 		}
 
+	time_t end = time(NULL);
 
+	printf("Time taken in swap in is %.2f\n", (double)(end - start));
 	
 	return (VM_PAGER_OK);
 

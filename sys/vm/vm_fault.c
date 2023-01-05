@@ -1378,6 +1378,7 @@ vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
 	if (rv == VM_PAGER_OK && fs->object->type == OBJT_SWAP && 
 			!sequential && !P_KILLED(curproc) && 
 			!pctrie_is_empty(&fs->object->un_pager.swp.swp_blks)) {
+		time_t start = time(NULL);
 		//printf("Running prefetcher\n");
 		vm_offset_t mva; 
 		vm_offset_t mve; 
@@ -1425,7 +1426,7 @@ vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
 				
 				vm_page_t p;
 				p = vm_page_lookup(obj, pindex);
-				if(p != NULL) {
+				if (p != NULL) {
 			
 					//printf("Page already in mem\n");
 				
@@ -1472,6 +1473,8 @@ vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
 				vm_map_lookup_done(fs->map, entry);
 			}
 		}
+		time_t end = time(NULL);
+		printf("Time for prefetcher is %.2f\n", (double)(end - start));
 	} 
 
 	if (rv == VM_PAGER_OK)

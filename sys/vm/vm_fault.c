@@ -97,6 +97,7 @@ __FBSDID("$FreeBSD$");
 #include <sys/sysent.h>
 #include <sys/vmmeter.h>
 #include <sys/vnode.h>
+#include <sys/time.h>
 #ifdef KTRACE
 #include <sys/ktrace.h>
 #endif

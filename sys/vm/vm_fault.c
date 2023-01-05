@@ -1452,9 +1452,10 @@ vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
 							,NULL, NULL);
 					if(result == VM_PAGER_OK) {
 						++count;
-						printf("Page prefetched %d\n", count);
+						//printf("Page prefetched %d\n", count);
 					} else {
-						printf("Page not prefetched %d\n", result);
+						//printf("Page not prefetched %d, %d\n", result, count);
+						++count;
 						VM_OBJECT_WLOCK(obj);
 						vm_page_free(p);
 						vm_object_pip_wakeup(obj);	

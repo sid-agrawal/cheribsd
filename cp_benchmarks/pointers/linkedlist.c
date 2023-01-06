@@ -4,8 +4,8 @@
 #include <time.h>
 #include <sys/resource.h>
 struct node {
-	struct node *next; 
 	int arr[1020];
+	struct node *next; 
 }__attribute__((aligned (4096)));
 
 #define num_nodes 1310721
@@ -69,14 +69,21 @@ int main() {
 	count = 0;
 	ll_curr = ll_head;
 
+	unsigned long counter = 0;
 	while(ll_curr != NULL) {
 		ll_curr = ll_curr->next;
 		count++;
+		if(ll_curr != NULL) {
+			for (int i = 0; i < 1000; i++){
+				counter++;
+				ll_curr->arr[i] = count;
+			}
+		}
 	}
 
 	clock_t end = clock();
 	float seconds = (float)(end - start) / CLOCKS_PER_SEC;
-	printf("Count is %d and time taken is %fs\n", count, seconds); 
+	printf("Count is %d and time taken is %fs, start is %lu\n", count, seconds, counter); 
 	return 0;	
 
 }

@@ -405,7 +405,7 @@ vm_fault_soft_fast(struct faultstate *fs)
 	VM_OBJECT_RUNLOCK(fs->first_object);
 	vm_fault_dirty(fs, m);
 	vm_map_lookup_done(fs->map, fs->entry);
-	VM_CNT_INC(v_softfault);
+	// VM_CNT_INC(v_softfault);
 	//printf("Softfault in fast path %lu\n", VM_CNT_FETCH(v_softfault));
 	curthread->td_ru.ru_minflt++;
 
@@ -1379,7 +1379,6 @@ vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
 	if (rv == VM_PAGER_OK && fs->object->type == OBJT_SWAP && 
 			!sequential && !P_KILLED(curproc) && 
 			!pctrie_is_empty(&fs->object->un_pager.swp.swp_blks)) {
-		time_t start = time(NULL);
 		//printf("Running prefetcher\n");
 		vm_offset_t mva; 
 		vm_offset_t mve; 
@@ -1398,7 +1397,7 @@ vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
 		int count = 0;
 		// vm_map_lock(fs->map);
 		//printf("mvu is %lu, mve is %lu\n", cheri_getaddress(mvu), mve);	
-		for(; cheri_getaddress(mvu) < mve && count < 1; mvu++) {
+		for(; cheri_getaddress(mvu) < mve && count < 4; mvu++) {
 			if(cheri_gettag(*mvu)) {
 				vm_offset_t vaddr = cheri_getaddress(*mvu);
 				if (trunc_page(vaddr) == 
@@ -1454,9 +1453,11 @@ vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
 							,NULL, NULL);
 					if(result == VM_PAGER_OK) {
 						++count;
+						VM_CNT_INC(v_prefetch);
 						//printf("Page prefetched %d\n", count);
 					} else {
 						//printf("Page not prefetched %d, %d\n", result, count);
+						// TODO(shaurp): Decide if we need this.		
 						++count;
 						VM_OBJECT_WLOCK(obj);
 						vm_page_free(p);
@@ -1474,8 +1475,6 @@ vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
 				vm_map_lookup_done(fs->map, entry);
 			}
 		}
-		time_t end = time(NULL);
-		printf("Time for prefetcher is %.2f\n", (double)(end - start));
 	} 
 
 	if (rv == VM_PAGER_OK)
@@ -1578,7 +1577,6 @@ vm_fault_object(struct faultstate *fs, int *behindp, int *aheadp)
 		 * done.
 		 */
 		if (vm_page_all_valid(fs->m)) {
-			// TODO(shaurp): This is the soft fault code path.
 			VM_CNT_INC(v_softfault);
 			//printf("Soft fault inside fault object %lu\n", VM_CNT_FETCH(v_softfault));
 			VM_OBJECT_WUNLOCK(fs->object);

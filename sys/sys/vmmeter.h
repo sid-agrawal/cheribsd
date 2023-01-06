@@ -96,8 +96,8 @@ struct vmmeter {
 	counter_u64_t v_ozfod;		/* (p) optimized zero fill pages */
 	counter_u64_t v_majfault;       /* (p) major page fault */
         counter_u64_t v_softfault;      /* (p) soft page faults */
-        counter_u64_t v_prefetch;       /* (p) soft page faults */
-	counter_u64_t v_noprefetch;     /* (p) soft page faults */
+        counter_u64_t v_prefetch;       /* (p) cheri prefetch successful */
+	counter_u64_t v_noprefetch;     /* (p) No prefetch */
 	counter_u64_t v_swapin;		/* (p) swap pager pageins */
 	counter_u64_t v_swapout;	/* (p) swap pager pageouts */
 	counter_u64_t v_swappgsin;	/* (p) swap pager pages paged in */
@@ -156,6 +156,7 @@ extern domainset_t vm_severe_domains;
 #define	VM_CNT_ADD(var, x)	counter_u64_add(vm_cnt.var, x)
 #define	VM_CNT_INC(var)		VM_CNT_ADD(var, 1)
 #define	VM_CNT_FETCH(var)	counter_u64_fetch(vm_cnt.var)
+#define VM_CNT_ZERO(var)		counter_u64_zero(vm_cnt.var)
 
 extern u_long vm_user_wire_count;
 

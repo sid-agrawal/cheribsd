@@ -1318,7 +1318,6 @@ static int
 swap_pager_getpages_locked(vm_object_t object, vm_page_t *ma, int count,
     int *rbehind, int *rahead)
 {
-	time_t start = time(NULL);
 	struct buf *bp;
 	vm_page_t bm, mpred, msucc, p;
 	vm_pindex_t pindex;
@@ -1476,9 +1475,6 @@ swap_pager_getpages_locked(vm_object_t object, vm_page_t *ma, int count,
 			return (VM_PAGER_ERROR);
 		}
 
-	time_t end = time(NULL);
-
-	printf("Time taken in swap in is %.2f\n", (double)(end - start));
 	
 	return (VM_PAGER_OK);
 
@@ -1562,8 +1558,8 @@ swap_pager_getpages_async(vm_object_t object, vm_page_t *ma, int count,
 	bp->b_pgbefore = rbehind != NULL ? *rbehind : 0;
 	bp->b_pgafter = rahead != NULL ? *rahead : 0;
 
-	VM_CNT_INC(v_swapin);
-	VM_CNT_ADD(v_swappgsin, count);
+	// VM_CNT_INC(v_swapin);
+	// VM_CNT_ADD(v_swappgsin, count);
 
 	/*
 	 * perform the I/O.  NOTE!!!  bp cannot be considered valid after

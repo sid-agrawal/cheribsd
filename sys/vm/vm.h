@@ -175,6 +175,7 @@ extern int old_mlock;
 
 extern int vm_ndomains;
 
+void set_cheri_prefetch(int val);
 #ifdef _KERNEL
 struct ucred;
 bool swap_reserve(vm_ooffset_t incr);

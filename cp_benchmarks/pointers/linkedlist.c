@@ -76,9 +76,9 @@ int main() {
 		if(ll_curr != NULL) {
 			for (int i = 0; i < 1000; i++){
 				counter++;
-				ll_curr->arr[i] = count;
+				//ll_curr->arr[i] = count;
 			}
-		}
+		} 
 	}
 
 	clock_t end = clock();

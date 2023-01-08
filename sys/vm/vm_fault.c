@@ -1490,7 +1490,6 @@ vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
 			}
 		}
 	} 
-#endif
 	if (rv == VM_PAGER_OK)
 		return (FAULT_HARD);
 	if (rv == VM_PAGER_ERROR)

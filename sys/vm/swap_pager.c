@@ -1318,6 +1318,8 @@ static int
 swap_pager_getpages_locked(vm_object_t object, vm_page_t *ma, int count,
     int *rbehind, int *rahead)
 {
+	// For now this tracks explicit swap ins.
+	VM_CNT_INC(v_majfault); 
 	struct buf *bp;
 	vm_page_t bm, mpred, msucc, p;
 	vm_pindex_t pindex;

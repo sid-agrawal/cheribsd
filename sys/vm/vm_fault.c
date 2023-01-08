@@ -405,7 +405,7 @@ vm_fault_soft_fast(struct faultstate *fs)
 	VM_OBJECT_RUNLOCK(fs->first_object);
 	vm_fault_dirty(fs, m);
 	vm_map_lookup_done(fs->map, fs->entry);
-	// VM_CNT_INC(v_softfault);
+	VM_CNT_INC(v_softfault);
 	//printf("Softfault in fast path %lu\n", VM_CNT_FETCH(v_softfault));
 	curthread->td_ru.ru_minflt++;
 

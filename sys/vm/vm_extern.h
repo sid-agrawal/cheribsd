@@ -90,6 +90,7 @@ int useracc(void * __capability, int, int);
 #if __has_feature(capabilities)
 bool vm_cap_allows_prot(const void * __capability, vm_prot_t);
 #endif
+void set_cheri_prefetch(int val);
 int vm_fault(vm_map_t map, vm_offset_t actual_vaddr, vm_offset_t vaddr, vm_prot_t fault_type,
     int fault_flags, vm_page_t *m_hold);
 void vm_fault_copy_entry(vm_map_t, vm_map_t, vm_map_entry_t, vm_map_entry_t,

@@ -121,6 +121,8 @@ __FBSDID("$FreeBSD$");
 
 #define	VM_FAULT_DONTNEED_MIN	1048576
 
+staic int cheri_prefetch = 0;
+
 struct faultstate {
 	/* Fault parameters. */
 	vm_offset_t	vaddr;
@@ -172,6 +174,10 @@ enum fault_status {
 	FAULT_SOFT,		/* Found valid page. */
 	FAULT_PROTECTION_FAILURE, /* Invalid access. */
 };
+
+void set_cheri_prefetch(int val) {
+	cheri_prefetch = val;
+}
 
 static void vm_fault_dontneed(const struct faultstate *fs, vm_offset_t vaddr,
 	    int ahead);
@@ -1284,15 +1290,12 @@ static enum fault_status
 vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
 {
 	vm_offset_t e_end; 
-
-#ifdef BSD_PREFETCH
-	vm_offset_t e_start;
-#endif
+	if (!cheri_prefetch) {
+		vm_offset_t e_start;
+		int cluster_offset;
+	}
 	int ahead, behind, rv;
 	
-#ifdef BSD_PRFETCH
-	int cluster_offset;
-#endif
 	enum fault_status status;
 	u_char behavior;
 
@@ -1304,9 +1307,8 @@ vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
 	 * unlocking the map, using the saved addresses is
 	 * safe.
 	 */
-#ifdef BSD_PRFETCH
-	e_start = fs->entry->start;
-#endif
+	if(!cheri_prefetch)
+		e_start = fs->entry->start;
 	e_end = fs->entry->end;
 	behavior = vm_map_entry_behavior(fs->entry);
 
@@ -1371,13 +1373,13 @@ vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
 			 * block than alignment to a virtual
 			 * address boundary.
 			 */
-#ifdef BSD_PREFETCH
-			printf("Running bsd prefetcher\n");
-			cluster_offset = fs->pindex % VM_FAULT_READ_DEFAULT;
-			behind = ulmin(cluster_offset,
-			    atop(fs->vaddr - e_start));
-			ahead = VM_FAULT_READ_DEFAULT - 1 - cluster_offset;
-#endif
+			if (!cheri_prefetch) {
+				printf("Running bsd prefetcher\n");
+				cluster_offset = fs->pindex % VM_FAULT_READ_DEFAULT;
+				behind = ulmin(cluster_offset,
+				    atop(fs->vaddr - e_start));
+				ahead = VM_FAULT_READ_DEFAULT - 1 - cluster_offset;
+			}
 		}
 		
 		ahead = ulmin(ahead, atop(e_end - fs->vaddr) - 1);
@@ -1387,12 +1389,11 @@ vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
 	*behindp = behind;
 	*aheadp = ahead;
 	rv = vm_pager_get_pages(fs->object, &fs->m, 1, behindp, aheadp);
-#ifndef BSD_PREFETCH
-	printf("Running cheri prefetcher\n");
-	if (rv == VM_PAGER_OK && fs->object->type == OBJT_SWAP && 
+	if (cheri_prefetch && (rv == VM_PAGER_OK && fs->object->type == OBJT_SWAP && 
 			!sequential && !P_KILLED(curproc) && 
-			!pctrie_is_empty(&fs->object->un_pager.swp.swp_blks)) {
+			!pctrie_is_empty(&fs->object->un_pager.swp.swp_blks))) {
 		//printf("Running prefetcher\n");
+		printf("Running cheri prefetcher\n");
 		vm_offset_t mva; 
 		vm_offset_t mve; 
 		uintcap_t * __capability mvu; 

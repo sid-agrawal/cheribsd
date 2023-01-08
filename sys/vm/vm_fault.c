@@ -1283,10 +1283,16 @@ vm_fault_allocate(struct faultstate *fs)
 static enum fault_status
 vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
 {
-	vm_offset_t e_end;  
-		    //e_start;
+	vm_offset_t e_end; 
+
+#ifdef BSD_PREFETCH
+	vm_offset_t e_start;
+#endif
 	int ahead, behind, rv;
-	//int cluster_offset;
+	
+#ifdef BSD_PRFETCH
+	int cluster_offset;
+#endif
 	enum fault_status status;
 	u_char behavior;
 
@@ -1298,7 +1304,9 @@ vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
 	 * unlocking the map, using the saved addresses is
 	 * safe.
 	 */
-	//e_start = fs->entry->start;
+#ifdef BSD_PRFETCH
+	e_start = fs->entry->start;
+#endif
 	e_end = fs->entry->end;
 	behavior = vm_map_entry_behavior(fs->entry);
 
@@ -1363,11 +1371,15 @@ vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
 			 * block than alignment to a virtual
 			 * address boundary.
 			 */
-			/* cluster_offset = fs->pindex % VM_FAULT_READ_DEFAULT;
+#ifdef BSD_PREFETCH
+			printf("Running bsd prefetcher\n");
+			cluster_offset = fs->pindex % VM_FAULT_READ_DEFAULT;
 			behind = ulmin(cluster_offset,
 			    atop(fs->vaddr - e_start));
-			ahead = VM_FAULT_READ_DEFAULT - 1 - cluster_offset;*/
+			ahead = VM_FAULT_READ_DEFAULT - 1 - cluster_offset;
+#endif
 		}
+		
 		ahead = ulmin(ahead, atop(e_end - fs->vaddr) - 1);
 		//printf("Count is %d\n", ahead);
 
@@ -1375,7 +1387,8 @@ vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
 	*behindp = behind;
 	*aheadp = ahead;
 	rv = vm_pager_get_pages(fs->object, &fs->m, 1, behindp, aheadp);
-
+#ifndef BSD_PREFETCH
+	printf("Running cheri prefetcher\n");
 	if (rv == VM_PAGER_OK && fs->object->type == OBJT_SWAP && 
 			!sequential && !P_KILLED(curproc) && 
 			!pctrie_is_empty(&fs->object->un_pager.swp.swp_blks)) {
@@ -1476,7 +1489,7 @@ vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
 			}
 		}
 	} 
-
+#endif
 	if (rv == VM_PAGER_OK)
 		return (FAULT_HARD);
 	if (rv == VM_PAGER_ERROR)
@@ -1671,6 +1684,7 @@ RetryFault:
 	 * those that are mapping an existing page from the top-level object.
 	 * Under this condition, a read lock on the object suffices, allowing
 	 * multiple page faults of a similar type to run in parallel.
+	 * Q(Shaurya): Understand the workflow after retry, does it come here?
 	 */
 	if (fs.vp == NULL /* avoid locked vnode leak */ &&
 	    (fs.entry->eflags & MAP_ENTRY_SPLIT_BOUNDARY_MASK) == 0 &&

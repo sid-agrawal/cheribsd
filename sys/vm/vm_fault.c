@@ -121,7 +121,7 @@ __FBSDID("$FreeBSD$");
 
 #define	VM_FAULT_DONTNEED_MIN	1048576
 
-staic int cheri_prefetch = 0;
+static int cheri_prefetch = 0;
 
 struct faultstate {
 	/* Fault parameters. */
@@ -1290,10 +1290,8 @@ static enum fault_status
 vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
 {
 	vm_offset_t e_end; 
-	if (!cheri_prefetch) {
-		vm_offset_t e_start;
-		int cluster_offset;
-	}
+	vm_offset_t e_start;
+	int cluster_offset;
 	int ahead, behind, rv;
 	
 	enum fault_status status;

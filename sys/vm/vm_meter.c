@@ -84,6 +84,7 @@ struct vmmeter __read_mostly vm_cnt = {
 	.v_vnodepgsin = EARLY_COUNTER,
 	.v_vnodepgsout = EARLY_COUNTER,
 	.v_intrans = EARLY_COUNTER,
+	.v_intrans_soft = EARLY_COUNTER,
 	.v_reactivated = EARLY_COUNTER,
 	.v_pdwakeups = EARLY_COUNTER,
 	.v_pdpages = EARLY_COUNTER,

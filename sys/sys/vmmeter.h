@@ -107,6 +107,7 @@ struct vmmeter {
 	counter_u64_t v_vnodepgsin;	/* (p) vnode_pager pages paged in */
 	counter_u64_t v_vnodepgsout;	/* (p) vnode pager pages paged out */
 	counter_u64_t v_intrans;	/* (p) intransit blocking page faults */
+	counter_u64_t v_intrans_soft;	/* (p) intransit blocking soft page faults */
 	counter_u64_t v_reactivated;	/* (p) reactivated by the pagedaemon */
 	counter_u64_t v_pdwakeups;	/* (p) times daemon has awaken */
 	counter_u64_t v_pdpages;	/* (p) pages analyzed by daemon */

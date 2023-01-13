@@ -411,8 +411,6 @@ vm_fault_soft_fast(struct faultstate *fs)
 	VM_OBJECT_RUNLOCK(fs->first_object);
 	vm_fault_dirty(fs, m);
 	vm_map_lookup_done(fs->map, fs->entry);
-	VM_CNT_INC(v_softfault);
-	//printf("Softfault in fast path %lu\n", VM_CNT_FETCH(v_softfault));
 	curthread->td_ru.ru_minflt++;
 
 out:
@@ -1372,7 +1370,6 @@ vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
 			 * address boundary.
 			 */
 			if (!cheri_prefetch) {
-				printf("Running bsd prefetcher\n");
 				cluster_offset = fs->pindex % VM_FAULT_READ_DEFAULT;
 				behind = ulmin(cluster_offset,
 				    atop(fs->vaddr - e_start));
@@ -1387,11 +1384,12 @@ vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
 	*behindp = behind;
 	*aheadp = ahead;
 	rv = vm_pager_get_pages(fs->object, &fs->m, 1, behindp, aheadp);
+	// TODO(shaurp): This still is being triggered on other conditions which 
+	// aren't swapins
 	if (cheri_prefetch && (rv == VM_PAGER_OK && fs->object->type == OBJT_SWAP && 
 			!sequential && !P_KILLED(curproc) && 
 			!pctrie_is_empty(&fs->object->un_pager.swp.swp_blks))) {
 		//printf("Running prefetcher\n");
-		printf("Running cheri prefetcher\n");
 		vm_offset_t mva; 
 		vm_offset_t mve; 
 		uintcap_t * __capability mvu; 
@@ -1450,13 +1448,6 @@ vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
 					if(p == NULL) 
 						break;
 
-					// We need exclusive access to this page.
-					//if(!vm_page_tryxbusy(p)) {
-					//	printf("Couldn't get exclusive access\n");
-						// vm_page_free(p);
-					//	break;
-					//} 
-
 					p->oflags |= VPO_SWAPINPROG;
 					vm_object_pip_add(obj, 1);
 					VM_OBJECT_WUNLOCK(obj);
@@ -1482,7 +1473,6 @@ vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
 				}
 
 
-				// }				
 				VM_OBJECT_WUNLOCK(obj);
 				vm_map_lookup_done(fs->map, entry);
 			}
@@ -1540,7 +1530,7 @@ vm_fault_busy_sleep(struct faultstate *fs)
 	if (fs->m != vm_page_lookup(fs->object, fs->pindex) ||
 	    !vm_page_busy_sleep(fs->m, "vmpfw", 0))
 		VM_OBJECT_WUNLOCK(fs->object);
-	VM_CNT_INC(v_intrans);
+	VM_CNT_INC(v_intrans_soft);
 	vm_object_deallocate(fs->first_object);
 }
 
@@ -1589,7 +1579,6 @@ vm_fault_object(struct faultstate *fs, int *behindp, int *aheadp)
 		 */
 		if (vm_page_all_valid(fs->m)) {
 			VM_CNT_INC(v_softfault);
-			//printf("Soft fault inside fault object %lu\n", VM_CNT_FETCH(v_softfault));
 			VM_OBJECT_WUNLOCK(fs->object);
 			return (FAULT_SOFT);
 		}

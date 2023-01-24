@@ -1348,7 +1348,7 @@ vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
 	KASSERT(fs->vp == NULL || !fs->map->system_map,
 	    ("vm_fault: vnode-backed object mapped by system map"));
 
-	int sequential = 0;
+	//int sequential = 0;
 	/*
 	 * Page in the requested page and hint the pager,
 	 * that it may bring up surrounding pages.
@@ -1368,7 +1368,7 @@ vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
                                // printf("Sequential Prefetch %lu\n", 
 				//		VM_CNT_FETCH(v_prefetch));
                         }
-			sequential = 1; 
+			//sequential = 1; 
 		} else {
 			/*
 			 * Request a cluster of pages that is
@@ -1398,7 +1398,7 @@ vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
 	// TODO(shaurp): This still is being triggered on other conditions which 
 	// aren't swapins
 	if (cheri_prefetch && (rv == VM_PAGER_OK && fs->object->type == OBJT_SWAP && 
-			!sequential && !P_KILLED(curproc) && 
+			 !P_KILLED(curproc) && 
 			!pctrie_is_empty(&fs->object->un_pager.swp.swp_blks))) {
 
 		struct timespec start, end; 

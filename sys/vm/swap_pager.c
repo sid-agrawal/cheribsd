@@ -1382,6 +1382,7 @@ swap_pager_getpages_locked(vm_object_t object, vm_page_t *ma, int count,
 			if (p == NULL)
 				break;
 			p->oflags |= VPO_SWAPINPROG;
+			p->prefetched = 1;
 			bm = p;
 		}
 		*rbehind = i - 1;
@@ -1393,6 +1394,7 @@ swap_pager_getpages_locked(vm_object_t object, vm_page_t *ma, int count,
 			if (p == NULL)
 				break;
 			p->oflags |= VPO_SWAPINPROG;
+			p->prefetched = 1;
 		}
 		*rahead = i;
 	}

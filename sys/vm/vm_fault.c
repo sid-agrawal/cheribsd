@@ -408,6 +408,15 @@ vm_fault_soft_fast(struct faultstate *fs)
 	}
 	if (psind == 0 && !fs->wired)
 		vm_fault_prefault(fs, vaddr, PFBAK, PFFOR, true);
+
+	if (m != NULL && m->prefetched == 1) {
+		VM_CNT_INC(v_softfault);
+		int softfaults = VM_CNT_FETCH(v_softfault);
+		/* if (softfaults % 10000 == 0)
+			printf("Softfaults: %d\n", softfaults); 
+		*/
+		m->prefetched = 0;
+	}
 	VM_OBJECT_RUNLOCK(fs->first_object);
 	vm_fault_dirty(fs, m);
 	vm_map_lookup_done(fs->map, fs->entry);
@@ -1437,9 +1446,8 @@ vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
 				vm_page_t p;
 				p = vm_page_lookup(obj, pindex);
 				if (p != NULL) {
-			
-					//printf("Page already in mem\n");
-				
+					VM_CNT_INC(v_resident);
+					//printf("Page in mem %lu\n", VM_CNT_FETCH(v_resident));
 				}
 				else {
 					p = vm_page_alloc(obj, pindex,
@@ -1456,12 +1464,13 @@ vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
 							,NULL, NULL);
 					if(result == VM_PAGER_OK) {
 						++count;
+						p->prefetched = 1;
 						VM_CNT_INC(v_prefetch);
-						//printf("Page prefetched %d\n", count);
+
+						//printf("Page prefetched %lx, %lu\n",fs->actual_vaddr, VM_CNT_FETCH(v_prefetch));
 					} else {
 						//printf("Page not prefetched %d, %d\n", result, count);
 						// TODO(shaurp): Decide if we need this.		
-						++count;
 						VM_OBJECT_WLOCK(obj);
 						vm_page_free(p);
 						vm_object_pip_wakeup(obj);	
@@ -1503,7 +1512,6 @@ vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
  * Wait/Retry if the page is busy.  We have to do this if the page is
  * either exclusive or shared busy because the vm_pager may be using
  * read busy for pageouts (and even pageins if it is the vnode pager),
- * and we could end up trying to pagein and pageout the same page
  * simultaneously.
  *
  * We can theoretically allow the busy case on a read fault if the page
@@ -1578,7 +1586,14 @@ vm_fault_object(struct faultstate *fs, int *behindp, int *aheadp)
 		 * done.
 		 */
 		if (vm_page_all_valid(fs->m)) {
-			VM_CNT_INC(v_softfault);
+			if (fs->m->prefetched == 1) {
+				VM_CNT_INC(v_softfault);
+				int softfaults = VM_CNT_FETCH(v_softfault);
+				/* if (softfaults % 10000 == 0)
+					printf("Softfaults: %d\n", softfaults);
+				*/
+				fs->m->prefetched = 0;
+			}
 			VM_OBJECT_WUNLOCK(fs->object);
 			return (FAULT_SOFT);
 		}
@@ -2338,6 +2353,7 @@ again:
 		 * The page can be invalid if the user called
 		 * msync(MS_INVALIDATE) or truncated the backing vnode
 		 * or shared memory object.  In this case, do not
+		 * or shared memory object.  In this case, do not
 		 * insert it into pmap, but still do the copy so that
 		 * all copies of the wired map entry have similar
 		 * backing pages.
@@ -2403,6 +2419,7 @@ vm_fault_enable_pagefaults(int save)
 //   "change_comment": ""
 // }
 // CHERI CHANGES END
+
 
 
 

@@ -60,7 +60,7 @@ int main() {
 			str[count++] = ch; 
 		}
 
-	} while(ch != EOF);
+	} while(ch != '\n');
 	
 	printf("LL constructed\n");
 	ll_curr->next = ll[num];

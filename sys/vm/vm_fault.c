@@ -410,8 +410,8 @@ vm_fault_soft_fast(struct faultstate *fs)
 		vm_fault_prefault(fs, vaddr, PFBAK, PFFOR, true);
 
 	if (m != NULL && m->prefetched == 1) {
-		VM_CNT_INC(v_softfault);
-		int softfaults = VM_CNT_FETCH(v_softfault);
+		vm_cnt.v_softfault++;
+		//int softfaults = VM_CNT_FETCH(v_softfault);
 		/* if (softfaults % 10000 == 0)
 			printf("Softfaults: %d\n", softfaults); 
 		*/
@@ -1398,7 +1398,7 @@ vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
 	if (cheri_prefetch && (rv == VM_PAGER_OK && fs->object->type == OBJT_SWAP && 
 			!sequential && !P_KILLED(curproc) && 
 			!pctrie_is_empty(&fs->object->un_pager.swp.swp_blks))) {
-		//printf("Running prefetcher\n");
+		// printf("Running prefetcher\n");
 		vm_offset_t mva; 
 		vm_offset_t mve; 
 		uintcap_t * __capability mvu; 
@@ -1587,8 +1587,8 @@ vm_fault_object(struct faultstate *fs, int *behindp, int *aheadp)
 		 */
 		if (vm_page_all_valid(fs->m)) {
 			if (fs->m->prefetched == 1) {
-				VM_CNT_INC(v_softfault);
-				int softfaults = VM_CNT_FETCH(v_softfault);
+				vm_cnt.v_softfault++;
+				// int softfaults = VM_CNT_FETCH(v_softfault);
 				/* if (softfaults % 10000 == 0)
 					printf("Softfaults: %d\n", softfaults);
 				*/

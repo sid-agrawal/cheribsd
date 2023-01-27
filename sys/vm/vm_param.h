@@ -88,7 +88,8 @@
 #define VM_SWAPPING_ENABLED	11	/* swapping enabled */
 #define VM_OVERCOMMIT		12	/* vm.overcommit */
 #define	VM_MAXID		13	/* number of valid vm ids */
-
+#define VM_V_SOFTFAULT          14      /* vm_cnt.v_softfault */
+#define VM_V_MAJORFAULT         15      /* vm_cnt.v_majorfault */
 /*
  * Structure for swap device statistics
  */

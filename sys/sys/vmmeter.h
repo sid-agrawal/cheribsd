@@ -95,7 +95,6 @@ struct vmmeter {
 	counter_u64_t v_zfod;		/* (p) pages zero filled on demand */
 	counter_u64_t v_ozfod;		/* (p) optimized zero fill pages */
 	counter_u64_t v_majfault;       /* (p) major page fault */
-        counter_u64_t v_softfault;      /* (p) soft page faults */
         counter_u64_t v_prefetch;       /* (p) cheri prefetch successful */
         counter_u64_t v_resident;       /* (p) cheri resident page found */
 	counter_u64_t v_noprefetch;     /* (p) No prefetch */
@@ -134,6 +133,8 @@ struct vmmeter {
 	/*
 	 * Distribution of page usages.
 	 */
+        u_int v_majorfault;      /* (p) major page faults */
+        u_int v_softfault;      /* (p) soft page faults */
 	u_int v_page_size;	/* (c) page size in bytes */
 	u_int v_page_count;	/* (c) total number of pages in system */
 	u_int v_free_reserved;	/* (c) pages reserved for deadlock */

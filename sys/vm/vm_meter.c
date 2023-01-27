@@ -68,7 +68,6 @@ struct vmmeter __read_mostly vm_cnt = {
 	.v_io_faults = EARLY_COUNTER,
 	.v_cow_faults = EARLY_COUNTER,
 	.v_cow_optim = EARLY_COUNTER,
-        .v_softfault = EARLY_COUNTER,
         .v_majfault = EARLY_COUNTER,
         .v_prefetch = EARLY_COUNTER,
         .v_resident = EARLY_COUNTER,
@@ -127,7 +126,10 @@ SYSCTL_UINT(_vm, VM_V_PAGEOUT_FREE_MIN, v_pageout_free_min,
 	CTLFLAG_RW, &vm_cnt.v_pageout_free_min, 0, "Min pages reserved for kernel");
 SYSCTL_UINT(_vm, OID_AUTO, v_free_severe,
 	CTLFLAG_RW, &vm_cnt.v_free_severe, 0, "Severe page depletion point");
-
+SYSCTL_UINT(_vm, VM_V_SOFTFAULT, v_softfault,
+		CTLFLAG_RW, &vm_cnt.v_softfault, 0, "Number of soft faults");
+SYSCTL_UINT(_vm, VM_V_MAJORFAULT, v_majorfault,
+		CTLFLAG_RW, &vm_cnt.v_majorfault, 0, "Number of major faults");
 static int
 sysctl_vm_loadavg(SYSCTL_HANDLER_ARGS)
 {

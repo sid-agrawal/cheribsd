@@ -1412,7 +1412,10 @@ vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
 		// KASSERT(!(fs->actual_vaddr - fs->vaddr) > PAGE_SIZE);
 		// mva += (fs->actual_vaddr - fs->vaddr);
 		mvu = cheri_setbounds(cheri_setaddress(kdc, mva), PAGE_SIZE);
-		
+		//printf("mvu before %lx\n", cheri_getaddress(mvu));
+		mvu += (fs->actual_vaddr - fs->vaddr);
+		//printf("mvu after %lx, difference %lx\n", cheri_getaddress(mvu), fs->actual_vaddr - fs->vaddr);
+
 		int count = 0;
 		// vm_map_lock(fs->map);
 		//printf("mvu is %lu, mve is %lu\n", cheri_getaddress(mvu), mve);	
@@ -1467,10 +1470,9 @@ vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
 						p->prefetched = 1;
 						VM_CNT_INC(v_prefetch);
 
-						//printf("Page prefetched %lx, %lu\n",fs->actual_vaddr, VM_CNT_FETCH(v_prefetch));
+					//	printf("Page prefetched %lx, %lu\n",fs->actual_vaddr, VM_CNT_FETCH(v_prefetch));
 					} else {
-						//printf("Page not prefetched %d, %d\n", result, count);
-						// TODO(shaurp): Decide if we need this.		
+					//	printf("Page not prefetched %d, %d\n", result, count);
 						VM_OBJECT_WLOCK(obj);
 						vm_page_free(p);
 						vm_object_pip_wakeup(obj);	

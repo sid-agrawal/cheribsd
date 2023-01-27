@@ -411,14 +411,14 @@ vm_fault_soft_fast(struct faultstate *fs)
 	if (psind == 0 && !fs->wired)
 		vm_fault_prefault(fs, vaddr, PFBAK, PFFOR, true);
 
-	if (m != NULL && m->prefetched == 1) {
-		vm_cnt.v_softfault++;
+	//if (m != NULL && m->prefetched == 1) {
+	vm_cnt.v_softfault++;
 		//int softfaults = VM_CNT_FETCH(v_softfault);
 		/* if (softfaults % 10000 == 0)
 			printf("Softfaults: %d\n", softfaults); 
 		*/
-		m->prefetched = 0;
-	}
+	//	m->prefetched = 0;
+	//}
 	VM_OBJECT_RUNLOCK(fs->first_object);
 	vm_fault_dirty(fs, m);
 	vm_map_lookup_done(fs->map, fs->entry);
@@ -1619,8 +1619,8 @@ vm_fault_object(struct faultstate *fs, int *behindp, int *aheadp)
 		 * done.
 		 */
 		if (vm_page_all_valid(fs->m)) {
-			if (fs->m->prefetched == 1) {
-				vm_cnt.v_softfault++;
+			//if (fs->m->prefetched == 1) {
+			vm_cnt.v_softfault++;
 				// int softfaults = VM_CNT_FETCH(v_softfault);
 				/* if (softfaults % 10000 == 0)
 					printf("Softfaults: %d\n", softfaults);

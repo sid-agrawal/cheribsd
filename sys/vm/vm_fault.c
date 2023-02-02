@@ -121,7 +121,9 @@ __FBSDID("$FreeBSD$");
 
 #define	VM_FAULT_DONTNEED_MIN	1048576
 
-static int cheri_prefetch = 0;
+static uint64_t num_pagefaults = 0; 
+static uint64_t num_prefetches = 0;
+static int cheri_prefetch = 1;
 
 struct faultstate {
 	/* Fault parameters. */
@@ -1398,6 +1400,8 @@ vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
 	if (cheri_prefetch && (rv == VM_PAGER_OK && fs->object->type == OBJT_SWAP && 
 			!sequential && !P_KILLED(curproc) && 
 			!pctrie_is_empty(&fs->object->un_pager.swp.swp_blks))) {
+	
+		uint64_t cycle1 = get_cyclecount();
 		// printf("Running prefetcher\n");
 		vm_offset_t mva; 
 		vm_offset_t mve; 
@@ -1410,15 +1414,12 @@ vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
 		mve = mva + PAGE_SIZE; 
 
 		// KASSERT(!(fs->actual_vaddr - fs->vaddr) > PAGE_SIZE);
-		// mva += (fs->actual_vaddr - fs->vaddr);
 		mvu = cheri_setbounds(cheri_setaddress(kdc, mva), PAGE_SIZE);
-		//printf("mvu before %lx\n", cheri_getaddress(mvu));
 		mvu += (fs->actual_vaddr - fs->vaddr);
-		//printf("mvu after %lx, difference %lx\n", cheri_getaddress(mvu), fs->actual_vaddr - fs->vaddr);
 
+		//KASSERT(mvu <= mve, ("checking address cannot be greater than 
+		// 		page size"));
 		int count = 0;
-		// vm_map_lock(fs->map);
-		//printf("mvu is %lu, mve is %lu\n", cheri_getaddress(mvu), mve);	
 		for(; cheri_getaddress(mvu) < mve && count < 4; mvu++) {
 			if(cheri_gettag(*mvu)) {
 				vm_offset_t vaddr = cheri_getaddress(*mvu);
@@ -1469,6 +1470,7 @@ vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
 						++count;
 						p->prefetched = 1;
 						VM_CNT_INC(v_prefetch);
+						vm_cnt.v_prefetches++;
 
 					//	printf("Page prefetched %lx, %lu\n",fs->actual_vaddr, VM_CNT_FETCH(v_prefetch));
 					} else {
@@ -1488,7 +1490,14 @@ vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
 				vm_map_lookup_done(fs->map, entry);
 			}
 		}
-	} 
+		uint64_t cycle2 = get_cyclecount();
+		num_prefetches++;
+		vm_cnt.v_prefetch_latency = (vm_cnt.v_prefetch_latency * 
+				(num_prefetches - 1) + (cycle2 - cycle1)) / 
+				num_prefetches;
+		// printf("Time in prefetcher is %lu\n", cycle2 - cycle1);
+
+	}
 	if (rv == VM_PAGER_OK)
 		return (FAULT_HARD);
 	if (rv == VM_PAGER_ERROR)
@@ -1541,6 +1550,7 @@ vm_fault_busy_sleep(struct faultstate *fs)
 	    !vm_page_busy_sleep(fs->m, "vmpfw", 0))
 		VM_OBJECT_WUNLOCK(fs->object);
 	VM_CNT_INC(v_intrans_soft);
+	vm_cnt.v_blocked_softfault++;
 	vm_object_deallocate(fs->first_object);
 }
 
@@ -1555,6 +1565,7 @@ vm_fault_busy_sleep(struct faultstate *fs)
 static enum fault_status
 vm_fault_object(struct faultstate *fs, int *behindp, int *aheadp)
 {
+	uint64_t cycle1 = get_cyclecount();
 	enum fault_status res;
 	bool dead;
 
@@ -1579,6 +1590,13 @@ vm_fault_object(struct faultstate *fs, int *behindp, int *aheadp)
 	if (fs->m != NULL) {
 		if (!vm_page_tryxbusy(fs->m)) {
 			vm_fault_busy_sleep(fs);
+			uint64_t cycle2 = get_cyclecount();
+			num_pagefaults++; 
+			vm_cnt.v_pagefault_latency = (vm_cnt.v_pagefault_latency * 
+					(num_pagefaults - 1) + (cycle2 - cycle1)) 
+					/ num_pagefaults;
+//			printf("Total cycles in blocked softfault is %lu\n", cycle2 - cycle1);
+			
 			return (FAULT_RESTART);
 		}
 
@@ -1596,6 +1614,13 @@ vm_fault_object(struct faultstate *fs, int *behindp, int *aheadp)
 				*/
 				fs->m->prefetched = 0;
 			}
+			uint64_t cycle2 = get_cyclecount();
+			num_pagefaults++; 
+			vm_cnt.v_pagefault_latency = (vm_cnt.v_pagefault_latency * 
+					(num_pagefaults - 1) + (cycle2 - cycle1)) 
+					/ num_pagefaults;
+//			printf("Total cycles in softfault is %lu\n", cycle2 - cycle1);
+			
 			VM_OBJECT_WUNLOCK(fs->object);
 			return (FAULT_SOFT);
 		}
@@ -1638,6 +1663,13 @@ vm_fault_object(struct faultstate *fs, int *behindp, int *aheadp)
 	} else {
 		res = FAULT_CONTINUE;
 	}
+
+	uint64_t cycle2 = get_cyclecount();
+	num_pagefaults++; 
+	vm_cnt.v_pagefault_latency = (vm_cnt.v_pagefault_latency * 
+			(num_pagefaults - 1) + (cycle2 - cycle1)) 
+			/ num_pagefaults;
+//	printf("Total cycles is %lu\n", cycle2 - cycle1);
 	return (res);
 }
 
@@ -1645,7 +1677,6 @@ int
 vm_fault(vm_map_t map, vm_offset_t actual_vaddr, vm_offset_t vaddr, vm_prot_t fault_type,
     int fault_flags, vm_page_t *m_hold)
 {
-	// TODO(shaurp): The vaddr here is the page address not the exact addr.
 	struct faultstate fs;
 	int ahead, behind, faultcount, rv;
 	enum fault_status res;

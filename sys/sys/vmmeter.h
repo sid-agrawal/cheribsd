@@ -135,6 +135,10 @@ struct vmmeter {
 	 */
         u_int v_majorfault;      /* (p) major page faults */
         u_int v_softfault;      /* (p) soft page faults */
+        u_int v_pagefault_latency; /* (p) soft page faults */
+        u_int v_prefetch_latency;  /* (p) soft page faults */
+        u_int v_prefetches;  /* (p) soft page faults */
+        u_int v_blocked_softfault;  /* (p) soft page faults */
 	u_int v_page_size;	/* (c) page size in bytes */
 	u_int v_page_count;	/* (c) total number of pages in system */
 	u_int v_free_reserved;	/* (c) pages reserved for deadlock */

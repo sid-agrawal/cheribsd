@@ -90,6 +90,11 @@
 #define	VM_MAXID		13	/* number of valid vm ids */
 #define VM_V_SOFTFAULT          14      /* vm_cnt.v_softfault */
 #define VM_V_MAJORFAULT         15      /* vm_cnt.v_majorfault */
+#define VM_V_PAGEFAULT_LATENCY  16      /* vm_cnt.v_pagefault_latency */
+#define VM_V_PREFETCH_LATENCY   17      /* vm_cnt.v_prefetch_latency */
+#define VM_V_BLOCKED_SOFTFAULT  18      /* vm_cnt.v_blocked_softfault */
+#define VM_V_PREFETCHES		19      /* vm_cnt.v_prefetches */
+
 /*
  * Structure for swap device statistics
  */

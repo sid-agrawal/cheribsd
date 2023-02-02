@@ -128,8 +128,19 @@ SYSCTL_UINT(_vm, OID_AUTO, v_free_severe,
 	CTLFLAG_RW, &vm_cnt.v_free_severe, 0, "Severe page depletion point");
 SYSCTL_UINT(_vm, VM_V_SOFTFAULT, v_softfault,
 		CTLFLAG_RW, &vm_cnt.v_softfault, 0, "Number of soft faults");
+SYSCTL_UINT(_vm, VM_V_PREFETCHES, v_prefetches,
+		CTLFLAG_RW, &vm_cnt.v_prefetches, 0, "Number of cheri prefetches");
+SYSCTL_UINT(_vm, VM_V_BLOCKED_SOFTFAULT, v_blocked_softfault,
+		CTLFLAG_RW, &vm_cnt.v_blocked_softfault, 
+		0, "Number of blocked soft faults");
 SYSCTL_UINT(_vm, VM_V_MAJORFAULT, v_majorfault,
 		CTLFLAG_RW, &vm_cnt.v_majorfault, 0, "Number of major faults");
+SYSCTL_UINT(_vm, VM_V_PAGEFAULT_LATENCY, v_pagefault_latency,
+		CTLFLAG_RW, &vm_cnt.v_pagefault_latency, 
+		0, "Average latency of major page faults");
+SYSCTL_UINT(_vm, VM_V_PREFETCH_LATENCY, v_prefetch_latency,
+		CTLFLAG_RW, &vm_cnt.v_prefetch_latency, 
+		0, "Average latency of cheri prefetcher");
 static int
 sysctl_vm_loadavg(SYSCTL_HANDLER_ARGS)
 {

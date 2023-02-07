@@ -129,6 +129,7 @@ struct buf {
 	struct	vnode *b_vp;		/* Device vnode. */
 	struct	ucred *b_rcred;		/* Read credentials reference. */
 	struct	ucred *b_wcred;		/* Write credentials reference. */
+	struct timespec start_time;	/* start time for this I/O */
 	union {
 		TAILQ_ENTRY(buf) b_freelist; /* (Q) */
 		struct {

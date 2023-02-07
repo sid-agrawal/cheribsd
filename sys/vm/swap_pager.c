@@ -171,6 +171,8 @@ typedef u_long tag_word_t;
 CTASSERT(TAG_BYTES_PER_PAGE % sizeof(tag_word_t) == 0);
 #endif
 
+uint64_t num_prefetches = 0;
+
 /*
  * A swblk structure maps each page index within a
  * SWAP_META_PAGES-aligned and sized range to the address of an
@@ -1319,8 +1321,9 @@ swap_pager_getpages_locked(vm_object_t object, vm_page_t *ma, int count,
     int *rbehind, int *rahead)
 {
 	// For now this tracks explicit swap ins.
+	struct timespec start, end; 
+	nanotime(&start);
 	VM_CNT_INC(v_majfault); 
-	vm_cnt.v_majorfault++;
 	struct buf *bp;
 	vm_page_t bm, mpred, msucc, p;
 	vm_pindex_t pindex;
@@ -1432,7 +1435,7 @@ swap_pager_getpages_locked(vm_object_t object, vm_page_t *ma, int count,
 	bp->b_npages = count;
 	bp->b_pgbefore = rbehind != NULL ? *rbehind : 0;
 	bp->b_pgafter = rahead != NULL ? *rahead : 0;
-
+	nanotime(&bp->start_time);
 	VM_CNT_INC(v_swapin);
 	// printf("Swap in %lu\n", VM_CNT_FETCH(v_swapin));
 	VM_CNT_ADD(v_swappgsin, count);
@@ -1480,7 +1483,13 @@ swap_pager_getpages_locked(vm_object_t object, vm_page_t *ma, int count,
 			return (VM_PAGER_ERROR);
 		}
 
-	
+
+	nanotime(&end);
+	vm_cnt.v_majorfault++;
+	vm_cnt.v_majorfault_latency = (vm_cnt.v_majorfault_latency * 
+		(vm_cnt.v_majorfault - 1) + (end.tv_nsec - start.tv_nsec)) / 
+		vm_cnt.v_majorfault;
+	// printf("Major fault ended, time taken: %lu\n", end.tv_nsec - start.tv_nsec);
 	return (VM_PAGER_OK);
 
 	/*
@@ -1562,7 +1571,7 @@ swap_pager_getpages_async(vm_object_t object, vm_page_t *ma, int count,
 	bp->b_npages = count;
 	bp->b_pgbefore = rbehind != NULL ? *rbehind : 0;
 	bp->b_pgafter = rahead != NULL ? *rahead : 0;
-
+	nanotime(&bp->start_time);
 	// VM_CNT_INC(v_swapin);
 	// VM_CNT_ADD(v_swappgsin, count);
 
@@ -1750,7 +1759,7 @@ swp_pager_async_cheri_iodone(struct buf *bp)
 {
 	int i;
 	vm_object_t object = NULL;
-
+	struct timespec end;
 	/*
 	 * Report error - unless we ran out of memory, in which case
 	 * we've already logged it in swapgeom_strategy().
@@ -1847,6 +1856,12 @@ swp_pager_async_cheri_iodone(struct buf *bp)
 			// if (i < bp->b_pgbefore ||
 			//     i >= bp->b_npages - bp->b_pgafter)
 			vm_page_readahead_finish(m);
+			nanotime(&end);
+			num_prefetches++;	
+			vm_cnt.v_async_io_latency = (vm_cnt.v_async_io_latency * 
+				(num_prefetches - 1) + (end.tv_nsec - bp->start_time.tv_nsec)) / 
+				num_prefetches;
+			//printf("Async request finished in %lu ns\n", end.tv_nsec - bp->start_time.tv_nsec); 
 		} else {
 			/*
 			 * For write success, clear the dirty

@@ -1400,9 +1400,9 @@ vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
 	if (cheri_prefetch && (rv == VM_PAGER_OK && fs->object->type == OBJT_SWAP && 
 			!sequential && !P_KILLED(curproc) && 
 			!pctrie_is_empty(&fs->object->un_pager.swp.swp_blks))) {
-	
-		uint64_t cycle1 = get_cyclecount();
-		// printf("Running prefetcher\n");
+
+		struct timespec start, end; 
+		nanotime(&start);
 		vm_offset_t mva; 
 		vm_offset_t mve; 
 		uintcap_t * __capability mvu; 
@@ -1415,7 +1415,7 @@ vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
 
 		// KASSERT(!(fs->actual_vaddr - fs->vaddr) > PAGE_SIZE);
 		mvu = cheri_setbounds(cheri_setaddress(kdc, mva), PAGE_SIZE);
-		mvu += (fs->actual_vaddr - fs->vaddr);
+		//mvu += (fs->actual_vaddr - fs->vaddr);
 
 		//KASSERT(mvu <= mve, ("checking address cannot be greater than 
 		// 		page size"));
@@ -1469,6 +1469,14 @@ vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
 					if(result == VM_PAGER_OK) {
 						++count;
 						p->prefetched = 1;
+						/* uint64_t base = cheri_getbase(
+								*mvu);
+						uint64_t len = cheri_getlen(
+								*mvu);
+						uint64_t offset = 
+							cheri_getoffset(*mvu);
+
+						printf("Base: %lx, length: %lu, offset: %lu, address: %lx\n", base, len, offset, vaddr); */
 						VM_CNT_INC(v_prefetch);
 						vm_cnt.v_prefetches++;
 
@@ -1490,12 +1498,17 @@ vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
 				vm_map_lookup_done(fs->map, entry);
 			}
 		}
-		uint64_t cycle2 = get_cyclecount();
-		num_prefetches++;
-		vm_cnt.v_prefetch_latency = (vm_cnt.v_prefetch_latency * 
-				(num_prefetches - 1) + (cycle2 - cycle1)) / 
+		if(count > 1) {
+			nanotime(&end);
+			num_prefetches++;
+			vm_cnt.v_prefetch_latency = (vm_cnt.v_prefetch_latency * 
+				(num_prefetches - 1) + (end.tv_nsec - start.tv_nsec)) / 
 				num_prefetches;
-		// printf("Time in prefetcher is %lu\n", cycle2 - cycle1);
+		}
+		if (count > 1) {
+			nanotime(&end);
+			// printf("Prefetching time is %lu\n", end.tv_nsec - start.tv_nsec);
+		}
 
 	}
 	if (rv == VM_PAGER_OK)

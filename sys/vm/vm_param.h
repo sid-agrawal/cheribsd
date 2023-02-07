@@ -94,7 +94,9 @@
 #define VM_V_PREFETCH_LATENCY   17      /* vm_cnt.v_prefetch_latency */
 #define VM_V_BLOCKED_SOFTFAULT  18      /* vm_cnt.v_blocked_softfault */
 #define VM_V_PREFETCHES		19      /* vm_cnt.v_prefetches */
-
+#define VM_V_PROFILE		20      /* vm_cnt.v_prefetches */
+#define VM_V_ASYNC_IO_LATENCY	21      /* vm_cnt.v_async_io_latency */
+#define VM_V_MAJORFAULT_LATENCY	22      /* vm_cnt.v_majorfault_latency */
 /*
  * Structure for swap device statistics
  */

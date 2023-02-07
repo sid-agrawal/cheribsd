@@ -46,7 +46,7 @@ __FBSDID("$FreeBSD$");
 #include <sys/sx.h>
 #include <sys/vmmeter.h>
 #include <sys/smp.h>
-
+#include <sys/time.h>
 #include <vm/vm.h>
 #include <vm/vm_page.h>
 #include <vm/vm_extern.h>
@@ -138,9 +138,14 @@ SYSCTL_UINT(_vm, VM_V_MAJORFAULT, v_majorfault,
 SYSCTL_UINT(_vm, VM_V_PAGEFAULT_LATENCY, v_pagefault_latency,
 		CTLFLAG_RW, &vm_cnt.v_pagefault_latency, 
 		0, "Average latency of major page faults");
-SYSCTL_UINT(_vm, VM_V_PREFETCH_LATENCY, v_prefetch_latency,
-		CTLFLAG_RW, &vm_cnt.v_prefetch_latency, 
-		0, "Average latency of cheri prefetcher");
+SYSCTL_UINT(_vm, VM_V_ASYNC_IO_LATENCY, v_async_io_latency,
+		CTLFLAG_RW, &vm_cnt.v_async_io_latency, 
+		0, "Average latency of async IO triggered by Cheripicking");
+SYSCTL_UINT(_vm, VM_V_MAJORFAULT_LATENCY, v_majorfault_latency,
+		CTLFLAG_RW, &vm_cnt.v_majorfault_latency, 
+		0, "Average latency of a majorfault IO");
+SYSCTL_UINT(_vm, VM_V_PROFILE, v_profile,
+		CTLFLAG_RW, &vm_cnt.v_profile, 0, "Profile the prefetcher");
 static int
 sysctl_vm_loadavg(SYSCTL_HANDLER_ARGS)
 {

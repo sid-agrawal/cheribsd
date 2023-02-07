@@ -1625,8 +1625,7 @@ vm_fault_object(struct faultstate *fs, int *behindp, int *aheadp)
 				/* if (softfaults % 10000 == 0)
 					printf("Softfaults: %d\n", softfaults);
 				*/
-				fs->m->prefetched = 0;
-			}
+			fs->m->prefetched = 0;
 			uint64_t cycle2 = get_cyclecount();
 			num_pagefaults++; 
 			vm_cnt.v_pagefault_latency = (vm_cnt.v_pagefault_latency * 

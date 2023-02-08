@@ -1321,9 +1321,8 @@ swap_pager_getpages_locked(vm_object_t object, vm_page_t *ma, int count,
     int *rbehind, int *rahead)
 {
 	// For now this tracks explicit swap ins.
-	struct timespec start, end; 
-	nanotime(&start);
-	VM_CNT_INC(v_majfault); 
+	struct timeval start, end; 
+	microtime(&start);
 	struct buf *bp;
 	vm_page_t bm, mpred, msucc, p;
 	vm_pindex_t pindex;
@@ -1484,12 +1483,21 @@ swap_pager_getpages_locked(vm_object_t object, vm_page_t *ma, int count,
 		}
 
 
-	nanotime(&end);
-	vm_cnt.v_majorfault++;
-	vm_cnt.v_majorfault_latency = (vm_cnt.v_majorfault_latency * 
-		(vm_cnt.v_majorfault - 1) + (end.tv_nsec - start.tv_nsec)) / 
-		vm_cnt.v_majorfault;
-	// printf("Major fault ended, time taken: %lu\n", end.tv_nsec - start.tv_nsec);
+	microtime(&end);
+	uint64_t seconds = end.tv_sec - start.tv_sec;
+	uint64_t microseconds = end.tv_usec - start.tv_usec;
+	uint64_t time_taken = seconds*1000000 + microseconds;
+	if (time_taken < 10000) {
+		VM_CNT_INC(v_majfault); 
+		vm_cnt.v_majorfault++;
+		vm_cnt.v_majorfault_latency = (vm_cnt.v_majorfault_latency * 
+			(vm_cnt.v_majorfault - 1) + (time_taken)) / 
+			vm_cnt.v_majorfault;
+		printf("Major fault ended, time taken: %lu, average is %u\n", 
+				time_taken, vm_cnt.v_majorfault_latency);
+	} else {
+		printf("Garbage time %lu", time_taken);
+	}
 	return (VM_PAGER_OK);
 
 	/*

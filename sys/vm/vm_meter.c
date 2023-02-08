@@ -138,6 +138,9 @@ SYSCTL_UINT(_vm, VM_V_MAJORFAULT, v_majorfault,
 SYSCTL_UINT(_vm, VM_V_PAGEFAULT_LATENCY, v_pagefault_latency,
 		CTLFLAG_RW, &vm_cnt.v_pagefault_latency, 
 		0, "Average latency of major page faults");
+SYSCTL_UINT(_vm, VM_V_PREFETCH_LATENCY, v_prefetch_latency,
+		CTLFLAG_RW, &vm_cnt.v_prefetch_latency, 
+		0, "Average latency of cheri prefetcher");
 SYSCTL_UINT(_vm, VM_V_ASYNC_IO_LATENCY, v_async_io_latency,
 		CTLFLAG_RW, &vm_cnt.v_async_io_latency, 
 		0, "Average latency of async IO triggered by Cheripicking");

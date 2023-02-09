@@ -10,9 +10,9 @@ static int cheri_prefetch_event_handler(struct module *module, int event_type, v
 
   switch (event_type) {             // event_type is an enum; let's switch on it
     case MOD_LOAD:                  // if we're loading
-      	printf("Soft faults %lu, Major swap in faults %lu, Successful prefetches %lu, Blocking faults %lu\n", VM_CNT_FETCH(v_softfault), VM_CNT_FETCH(v_majfault), VM_CNT_FETCH(v_prefetch), VM_CNT_FETCH(v_intrans_soft));
+      	printf("Major swap in faults %lu, Successful prefetches %lu, Blocking faults %lu\n", VM_CNT_FETCH(v_majfault), VM_CNT_FETCH(v_prefetch), VM_CNT_FETCH(v_intrans_soft));
 	set_cheri_prefetch(1);
-	VM_CNT_ZERO(v_softfault);
+	// VM_CNT_ZERO(v_softfault);
 	VM_CNT_ZERO(v_majfault);
 	VM_CNT_ZERO(v_prefetch);
 	VM_CNT_ZERO(v_intrans_soft);
@@ -21,9 +21,8 @@ static int cheri_prefetch_event_handler(struct module *module, int event_type, v
 	break;
 
     case MOD_UNLOAD:                // if were unloading
-      	printf("Soft faults %lu, Major swap in faults %lu, Successful prefetches %lu, Blocking soft aults %lu\n", VM_CNT_FETCH(v_softfault), VM_CNT_FETCH(v_majfault), VM_CNT_FETCH(v_prefetch), VM_CNT_FETCH(v_intrans_soft));
+      	printf("Major swap in faults %lu, Successful prefetches %lu, Blocking soft aults %lu\n", VM_CNT_FETCH(v_majfault), VM_CNT_FETCH(v_prefetch), VM_CNT_FETCH(v_intrans_soft));
 	set_cheri_prefetch(0);
-	VM_CNT_ZERO(v_softfault);
 	VM_CNT_ZERO(v_majfault);
 	VM_CNT_ZERO(v_prefetch);
 	VM_CNT_ZERO(v_intrans_soft);

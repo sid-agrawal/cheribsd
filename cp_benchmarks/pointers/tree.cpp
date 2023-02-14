@@ -7,6 +7,8 @@
 #include <chrono>
 #include <sys/sysctl.h>
 #include <assert.h>
+
+#include "stats.h"
 using namespace std;
 
 int node_count = 0;
@@ -15,7 +17,7 @@ int cycle_per_node;
 #define PAGE_SIZE 4096
 
 /* Forward Defs */
-void printRunStats();
+void printRunStats(struct run_stat*);
 
 void handleRV(int rv, 
                 const char * name,
@@ -161,8 +163,9 @@ void inOrder(Node* root)
 //  main 
 int main(int argc,char* argv[])
 {
-        printRunStats();
-        exit(1);
+        //struct run_stat rv;
+        //printRunStats(&rv);
+        
         if (argc != 3){
                 cout << "Usage: tree <depth> <cyclesPerNode>\n";
                 exit(1);
@@ -204,19 +207,6 @@ int main(int argc,char* argv[])
                 std::chrono::duration_cast<std::chrono::seconds>(end - begin).count() 
                 << "[s]" << std::endl;
 }
-
-
-struct run_stat{
-        char *name;
-        bool cheri_picking_enabled;
-        int cycle_per_node;
-        int depth;
-        struct counter{
-                char *name;
-                int value;
-        } counters[5];
-        int duration_second;
-};
 
 void printRunStats(struct run_stat *rs){
 

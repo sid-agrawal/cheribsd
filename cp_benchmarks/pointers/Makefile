@@ -1,5 +1,3 @@
-
-
 ll: 
 	cc -O2 linkedlist.c -o ll
 

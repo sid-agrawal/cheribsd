@@ -6,6 +6,7 @@
 #include <iostream>
 #include <chrono>
 #include <sys/sysctl.h>
+#include <assert.h>
 using namespace std;
 
 int node_count = 0;
@@ -13,7 +14,22 @@ int cycle_per_node;
 
 #define PAGE_SIZE 4096
 
-void printstats() {
+
+void handleRV(int rv, 
+                const char * name,
+                int value, size_t len) {
+        if (rv) {
+                printf("%s V: %d Len: %zu\n", name, value, len);
+                printf("error no: %d\n", errno);
+                exit(1);
+        }
+
+
+}
+
+
+
+void printStats() {
 	int mib_soft[2], mib_major[2], mib_blocked[2], mib_prefetch[2], softfaults, majorfaults, blocked_faults, prefetches; 
 	size_t mib_soft_len, mib_major_len, mib_blocked_len, mib_prefetch_len, len; 
 
@@ -35,6 +51,47 @@ void printstats() {
 	sysctl(mib_prefetch, 2, &prefetches, &len, NULL, 0);
 
 	printf("Softfaults %d, majorfaults %d, Blocked faults %d, prefetches %d\n", softfaults, majorfaults, blocked_faults, prefetches);
+}
+
+void clearStats() {
+	int mib_soft[2], mib_major[2], mib_blocked[2], mib_prefetch[2];
+        int softfault, majorfault, blocked_fault, prefetch; 
+	size_t mib_soft_len, mib_major_len, mib_blocked_len, mib_prefetch_len, len; 
+
+        int rv;
+	
+	rv = sysctlnametomib("vm.v_softfault", mib_soft, &mib_soft_len);
+        assert(rv==0);
+	rv = sysctlnametomib("vm.v_majorfault", mib_major, &mib_major_len);
+        assert(rv==0);
+	rv = sysctlnametomib("vm.v_blocked_softfault", mib_blocked, &mib_blocked_len);
+        assert(rv==0);
+	rv = sysctlnametomib("vm.v_prefetches", mib_prefetch, &mib_prefetch_len);
+        assert(rv==0);
+	
+	len = sizeof(softfault);
+        int new_softfault=0;
+	rv = sysctl(mib_soft, mib_soft_len, &softfault, &len, &new_softfault, len);
+        handleRV(rv, "vm.v_softfault", softfault, len);
+
+	len = sizeof(majorfault);
+        int new_majorfault=0;
+	rv = sysctl(mib_major, mib_major_len, &majorfault, &len, &new_majorfault, len);
+        handleRV(rv, "vm.v_majorfault", majorfault, len);
+
+        len = sizeof(blocked_fault);
+        int new_blocked_fault=0;
+	rv = sysctl(mib_blocked, mib_major_len, &blocked_fault, &len, &new_blocked_fault, len);
+        handleRV(rv, "vm.v_blocked_softfault", blocked_fault, len);
+	
+        len = sizeof(prefetch);
+        int new_prefetch=0;
+	rv = sysctl(mib_prefetch, mib_prefetch_len, &prefetch, &len, &new_prefetch, len);
+        handleRV(rv, "vm.v_prefetches", prefetch, len);
+
+        printf("All stats cleared. ");
+        printf("the stats below should be very close to zero\n");
+        printStats();
 }
 /* A binary tree node has data_int, and data_char
 pointer to left child and a
@@ -94,7 +151,7 @@ void inOrder(Node* root)
                         busy_work++;
                 }
 		inOrder(root->left);
-		cout << "data" << root->data_int <<"\n ";
+		//cout << "data: " << root->data_int <<"\n ";
 		inOrder(root->right);
 	}
 }
@@ -114,31 +171,33 @@ int main(int argc,char* argv[])
         cycle_per_node = atoi(argv[2]);
 
         /* Calculate Total Number of Nodes*/
-	long n = 1ULL << (depth-1);
-        
+        long n = 1ULL << (depth-1);
+
         /* Print Summary */
         cout << "Depth is: " << depth << "\n";  
         cout << "Cycle Per Node is: " << cycle_per_node << "\n";  
         cout << "Count is: " << n << "\n";  
         cout << "Approx Memory consumption: " << PAGE_SIZE*n/1024/1024 << " MB\n";  
-        
+
         std::chrono::steady_clock::time_point begin,end;
         begin = std::chrono::steady_clock::now();
 
 
         cout << "START of Construction\n";
         begin = std::chrono::steady_clock::now();
-	Node* root = insertLevelOrder(0, n);
+        Node* root = insertLevelOrder(0, n);
         end = std::chrono::steady_clock::now();
         cout << "END   of Construction. Duration: " << 
-         std::chrono::duration_cast<std::chrono::seconds>(end - begin).count() 
-         << "[s]" << std::endl;
+                std::chrono::duration_cast<std::chrono::seconds>(end - begin).count() 
+                << "[s]" << std::endl;
 
         cout << "START of Traversal\n";
         begin = std::chrono::steady_clock::now();
-	inOrder(root);
+        clearStats();
+        inOrder(root);
+        printStats();
         end = std::chrono::steady_clock::now();
         cout << "END   of Traversal. Duration: " << 
-         std::chrono::duration_cast<std::chrono::seconds>(end - begin).count() 
-         << "[s]" << std::endl;
+                std::chrono::duration_cast<std::chrono::seconds>(end - begin).count() 
+                << "[s]" << std::endl;
 }

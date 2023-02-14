@@ -14,6 +14,8 @@ int cycle_per_node;
 
 #define PAGE_SIZE 4096
 
+/* Forward Defs */
+void printRunStats();
 
 void handleRV(int rv, 
                 const char * name,
@@ -156,9 +158,11 @@ void inOrder(Node* root)
 	}
 }
 
-// Driver program to test above function
+//  main 
 int main(int argc,char* argv[])
 {
+        printRunStats();
+        exit(1);
         if (argc != 3){
                 cout << "Usage: tree <depth> <cyclesPerNode>\n";
                 exit(1);
@@ -182,7 +186,6 @@ int main(int argc,char* argv[])
         std::chrono::steady_clock::time_point begin,end;
         begin = std::chrono::steady_clock::now();
 
-
         cout << "START of Construction\n";
         begin = std::chrono::steady_clock::now();
         Node* root = insertLevelOrder(0, n);
@@ -200,4 +203,43 @@ int main(int argc,char* argv[])
         cout << "END   of Traversal. Duration: " << 
                 std::chrono::duration_cast<std::chrono::seconds>(end - begin).count() 
                 << "[s]" << std::endl;
+}
+
+
+struct run_stat{
+        char *name;
+        bool cheri_picking_enabled;
+        int cycle_per_node;
+        int depth;
+        struct counter{
+                char *name;
+                int value;
+        } counters[5];
+        int duration_second;
+};
+
+void printRunStats(struct run_stat *rs){
+
+        rs->name = "bfs";
+        rs->cheri_picking_enabled = true;
+        rs->cycle_per_node = 1000;
+        rs->depth = 10;
+        rs->counters[0].name = "v_prefetches";
+        rs->counters[0].value = 1098790;
+        rs->counters[1].name = "v_majorfaults";
+        rs->counters[1].value = 1098790;
+        rs->duration_second = 14999;
+
+
+        printf("%s\n", rs->name);
+        printf("\t CHERI: %s \tCycle: %d \tDepth: %d \tDuration: %d\n",
+                        rs->cheri_picking_enabled ? "TRUE" : "FALSE",
+                        rs->cycle_per_node,
+                        rs->depth,
+                        rs->duration_second);
+        for (int i = 0; i < 5; i++) {
+                printf("%s \t %d\n", rs->counters[i].name, rs->counters[i].value);
+
+        }
+                        
 }

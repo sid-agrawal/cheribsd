@@ -135,6 +135,8 @@ SYSCTL_UINT(_vm, VM_V_BLOCKED_SOFTFAULT, v_blocked_softfault,
 		0, "Number of blocked soft faults");
 SYSCTL_UINT(_vm, VM_V_MAJORFAULT, v_majorfault,
 		CTLFLAG_RW, &vm_cnt.v_majorfault, 0, "Number of major faults");
+SYSCTL_UINT(_vm, VM_V_CHERI_PREFETCH, v_cheri_prefetch,
+		CTLFLAG_RW, &vm_cnt.v_cheri_prefetch, 0, "Toggle cheri prefetcher");
 SYSCTL_UINT(_vm, VM_V_PAGEFAULT_LATENCY, v_pagefault_latency,
 		CTLFLAG_RW, &vm_cnt.v_pagefault_latency, 
 		0, "Average latency of major page faults");

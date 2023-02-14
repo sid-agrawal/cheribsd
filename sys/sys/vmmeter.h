@@ -135,10 +135,11 @@ struct vmmeter {
 	 */
         u_int v_majorfault;      /* (p) major page faults */
         u_int v_softfault;      /* (p) soft page faults */
-        u_int v_pagefault_latency; /* (p) soft page faults */
-        u_int v_prefetch_latency;  /* (p) soft page faults */
-        u_int v_async_io_latency;  /* (p) soft page faults */
-        u_int v_majorfault_latency;  /* (p) soft page faults */
+        u_int v_pagefault_latency; /* (p) soLatency of cheri prefetcher */
+        u_int v_prefetch_latency;  /* (p) Latency of cheri prefetcher */
+        u_int v_async_io_latency;  /* (p) I/O latency for cheri prefetcher */
+        u_int v_cheri_prefetch;  /* (p) toggle cheri prefetcher */
+        u_int v_majorfault_latency;  /* (p)  Major pagefault I/O latency */
         u_int v_profile;	/* (p) Profile the prefetcher pointers */
         u_int v_prefetches;  /* (p) soft page faults */
         u_int v_blocked_softfault;  /* (p) soft page faults */

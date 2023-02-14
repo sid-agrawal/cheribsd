@@ -1397,9 +1397,11 @@ vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
 	rv = vm_pager_get_pages(fs->object, &fs->m, 1, behindp, aheadp);
 	// TODO(shaurp): This still is being triggered on other conditions which 
 	// aren't swapins
-	if (cheri_prefetch && (rv == VM_PAGER_OK && fs->object->type == OBJT_SWAP && 
-			 !P_KILLED(curproc) && 
-			!pctrie_is_empty(&fs->object->un_pager.swp.swp_blks))) {
+	if (&vm_cnt.v_cheri_prefetch && (rv == VM_PAGER_OK && 
+				fs->object->type == OBJT_SWAP && 
+				!sequential && !P_KILLED(curproc) && 
+				!pctrie_is_empty(
+					&fs->object->un_pager.swp.swp_blks))) {
 
 		struct timespec start, end; 
 		nanotime(&start);

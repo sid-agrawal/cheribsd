@@ -1493,10 +1493,10 @@ swap_pager_getpages_locked(vm_object_t object, vm_page_t *ma, int count,
 		vm_cnt.v_majorfault_latency = (vm_cnt.v_majorfault_latency * 
 			(vm_cnt.v_majorfault - 1) + (time_taken)) / 
 			vm_cnt.v_majorfault;
-		printf("Major fault ended, time taken: %lu, average is %u\n", 
-				time_taken, vm_cnt.v_majorfault_latency);
+		//printf("Major fault ended, time taken: %lu, average is %u\n", 
+		//		time_taken, vm_cnt.v_majorfault_latency);
 	} else {
-		printf("Garbage time %lu", time_taken);
+		//printf("Garbage time %lu", time_taken);
 	}
 	return (VM_PAGER_OK);
 

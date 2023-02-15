@@ -96,7 +96,7 @@ def handle_tree(args):
     allStats = {}
     expt_idx = 1
     pp = pprint.PrettyPrinter(indent=4)
-    print("Enabling CP")
+    print("====================Enabling CP====================================")
     enableCP()
 
     for x in range(args.start_delay, args.end_delay, args.step_delay):
@@ -111,13 +111,14 @@ def handle_tree(args):
         stat = collectStats()
         stat['output'] = output
         pprint.pprint(stat)
+        print("===============")
 
         key = str(expt_idx) + "-" + "CP_ON-" + args.subcommand + "-" + str(args.depth) + "-" + str(x)
         allStats[key] = stat
         expt_idx += 1
 
 
-    print("Disabling CP")
+    print("====================Disabling CP====================================")
     disableCP()
         
     for x in range(args.start_delay, args.end_delay, args.step_delay):
@@ -135,6 +136,7 @@ def handle_tree(args):
         stat = collectStats()
         stat['output'] = output
         pprint.pprint(stat)
+        print("===============")
 
         key = str(expt_idx) + "-" + "CP_OFF-" + args.subcommand + "-" + str(args.depth) + "-" + str(x)
         allStats[key] = stat

@@ -4,6 +4,8 @@ import argparse
 import sys
 import subprocess
 from python_sysctl import sysctlRead, sysctlWrite
+import pprint
+import re
 
 
 important_stat = ( 
@@ -21,8 +23,12 @@ def debugPrint(args):
     print()
 
 def runCommand( cmd ):
-    result = subprocess.run(cmd, capture_output=True)
-    print(repr(result.stdout))
+    print("Running:", cmd)
+    result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+    output = result.stdout
+    output = output.split("\n")
+    for x in output:
+        print("\t",x)
   
 def enableCP():
     newValue = sysctlWrite(b"vm.v_cheri_prefetch", 1)
@@ -73,18 +79,25 @@ def handle_ll(subparser):
     print("In ll", subparser)
 
 def handle_tree(args):
+    pp = pprint.PrettyPrinter(indent=4)
     print("Enabling CP")
     enableCP()
 
     for x in range(args.start_delay, args.end_delay, args.step_delay):
+        print("Clearing Stats")
+        resetStats()
         runCommand([ "./tree", str(args.depth), str(x)])
+        pprint.pprint(collectStats())
 
 
     print("Disabling CP")
     disableCP()
         
     for x in range(args.start_delay, args.end_delay, args.step_delay):
+        print("Clearing Stats")
+        resetStats()
         runCommand([ "./tree", str(args.depth), str(x)])
+        pprint.pprint(collectStats())
 
 if __name__ == "__main__":
     main(sys.argv[1:])

@@ -30,8 +30,9 @@ def runCommand( cmd ):
     result = subprocess.run(cmd, capture_output=True, text=True, check=True)
     output = result.stdout
     output = output.split("\n")
-    for x in output:
-        print("\t",x)
+    #for x in output:
+    #   print("\t",x)
+    return output
   
 def enableCP():
     name ="vm.v_cheri_prefetch"
@@ -83,7 +84,15 @@ def main(argv):
 def handle_ll(subparser):
     print("In ll", subparser)
 
+
+def recompileTree():
+    runCommand(["rm", "-f", "./tree"])
+    runCommand(["gmake", "tree"])
+
 def handle_tree(args):
+
+    recompileTree()
+
     allStats = {}
     expt_idx = 1
     pp = pprint.PrettyPrinter(indent=4)
@@ -91,11 +100,18 @@ def handle_tree(args):
     enableCP()
 
     for x in range(args.start_delay, args.end_delay, args.step_delay):
+        # Beign extra cautious
+        assert(sysctlRead("vm.v_cheri_prefetch") == 1)
+
+
         print("CP_ON:: Clearing Stats")
         resetStats()
-        runCommand([ "./tree", str(args.depth), str(x)])
+        output = runCommand([ "./tree", str(args.depth), str(x)])
         print("CP_ON:: Collecting Stats")
         stat = collectStats()
+        stat['output'] = output
+        pprint.pprint(stat)
+
         key = str(expt_idx) + "-" + "CP_ON-" + args.subcommand + "-" + str(args.depth) + "-" + str(x)
         allStats[key] = stat
         expt_idx += 1
@@ -105,18 +121,28 @@ def handle_tree(args):
     disableCP()
         
     for x in range(args.start_delay, args.end_delay, args.step_delay):
+        # Beign extra cautious
+        assert(sysctlRead("vm.v_cheri_prefetch") == 0)
+
         print("CP_OFF: Clearing Stats")
         resetStats()
-        runCommand([ "./tree", str(args.depth), str(x)])
+
+        # Run the command
+        output = runCommand([ "./tree", str(args.depth), str(x)])
+
+
         print("CP_OFF: Collecting Stats")
         stat = collectStats()
+        stat['output'] = output
+        pprint.pprint(stat)
+
         key = str(expt_idx) + "-" + "CP_OFF-" + args.subcommand + "-" + str(args.depth) + "-" + str(x)
         allStats[key] = stat
         expt_idx += 1
         
-    pprint.pprint(allStats)
-    with tempfile.NamedTemporaryFile(mode='w',dir='.', delete=False, suffix=time.strftime("%Y%m%d-%H%M%S")) as fp:
-        print(fp.name) 
+    #pprint.pprint(allStats)
+    with tempfile.NamedTemporaryFile(mode='w',dir='.', delete=False, prefix='log_'+time.strftime("%Y%m%d-%H%M%S")+ '_') as fp:
+        print("All Stats in:", fp.name) 
         fp.write(json.dumps(allStats, sort_keys=True, indent=4))
 
 if __name__ == "__main__":

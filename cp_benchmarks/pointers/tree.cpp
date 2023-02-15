@@ -100,27 +100,27 @@ int main(int argc,char* argv[])
         long n = 1ULL << (depth-1);
 
         /* Print Summary */
-        cout << "Depth is: " << depth << "\n";  
-        cout << "Cycle Per Node is: " << cycle_per_node << "\n";  
-        cout << "Count is: " << n << "\n";  
+        cout << "Depth: " << depth << "\n";  
+        cout << "Delay: " << cycle_per_node << " loop \n";  
+        cout << "Num Nodes: " << n << "\n";  
         cout << "Approx Memory consumption: " << PAGE_SIZE*n/1024/1024 << " MB\n";  
 
         std::chrono::steady_clock::time_point begin,end;
         begin = std::chrono::steady_clock::now();
 
-        cout << "START of Construction\n";
+        //cout << "START of Construction\n";
         begin = std::chrono::steady_clock::now();
         Node* root = insertLevelOrder(0, n);
         end = std::chrono::steady_clock::now();
-        cout << "END   of Construction. Duration: " << 
+        cout << "Construction: " << 
                 std::chrono::duration_cast<std::chrono::seconds>(end - begin).count() 
                 << "[s]" << std::endl;
 
-        cout << "START of Traversal\n";
+        //cout << "START of Traversal\n";
         begin = std::chrono::steady_clock::now();
         inOrder(root);
         end = std::chrono::steady_clock::now();
-        cout << "END   of Traversal. Duration: " << 
+        cout << "Traversal: " << 
                 std::chrono::duration_cast<std::chrono::seconds>(end - begin).count() 
                 << "[s]" << std::endl;
 }

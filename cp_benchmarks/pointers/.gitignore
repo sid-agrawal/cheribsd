@@ -2,4 +2,4 @@ ll
 tree
 
 __pycache__
-tmp*
+log_*

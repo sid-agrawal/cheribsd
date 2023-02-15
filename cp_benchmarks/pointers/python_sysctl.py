@@ -4,6 +4,7 @@ libc = CDLL(find_library("c"))
 
 def sysctlRead(name):
     
+    name = name.encode('utf-8')
     # Find out how big our buffer will be
     size = c_uint(0)
     rv = libc.sysctlbyname(name, None, byref(size), None, 0)
@@ -19,6 +20,7 @@ def sysctlRead(name):
     return value.value
 
 def sysctlWrite(name, value):
+    name = name.encode('utf-8')
     
     # Find out how big our buffer will be
     size = c_uint(0)

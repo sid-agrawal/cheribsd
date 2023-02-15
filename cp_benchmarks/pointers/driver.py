@@ -6,17 +6,20 @@ import subprocess
 from python_sysctl import sysctlRead, sysctlWrite
 import pprint
 import re
+import json
+import tempfile
+import time
 
 
 important_stat = ( 
-        b"vm.v_prefetches", 
-        b"vm.v_majorfault",
-        b"vm.v_majorfault_latency",
-        b"vm.v_async_io_latency",
-        b"vm.v_prefetches",
-        b"vm.v_prefetch_latency",
-        b"vm.v_blocked_softfault",
-        b"vm.v_prefetches"
+        "vm.v_prefetches", 
+        "vm.v_majorfault",
+        "vm.v_majorfault_latency",
+        "vm.v_async_io_latency",
+        "vm.v_prefetches",
+        "vm.v_prefetch_latency",
+        "vm.v_blocked_softfault",
+        "vm.v_prefetches"
         )
 
 def debugPrint(args):
@@ -31,11 +34,13 @@ def runCommand( cmd ):
         print("\t",x)
   
 def enableCP():
-    newValue = sysctlWrite(b"vm.v_cheri_prefetch", 1)
+    name ="vm.v_cheri_prefetch"
+    newValue = sysctlWrite(name, 1)
     assert(newValue == 1)
 
 def disableCP():
-    newValue = sysctlWrite(b"vm.v_cheri_prefetch", 0)
+    name ="vm.v_cheri_prefetch"
+    newValue = sysctlWrite(name, 0)
     assert(newValue == 0)
 
 def resetStats():
@@ -79,25 +84,40 @@ def handle_ll(subparser):
     print("In ll", subparser)
 
 def handle_tree(args):
+    allStats = {}
+    expt_idx = 1
     pp = pprint.PrettyPrinter(indent=4)
     print("Enabling CP")
     enableCP()
 
     for x in range(args.start_delay, args.end_delay, args.step_delay):
-        print("Clearing Stats")
+        print("CP_ON:: Clearing Stats")
         resetStats()
         runCommand([ "./tree", str(args.depth), str(x)])
-        pprint.pprint(collectStats())
+        print("CP_ON:: Collecting Stats")
+        stat = collectStats()
+        key = str(expt_idx) + "-" + "CP_ON-" + args.subcommand + "-" + str(args.depth) + "-" + str(x)
+        allStats[key] = stat
+        expt_idx += 1
 
 
     print("Disabling CP")
     disableCP()
         
     for x in range(args.start_delay, args.end_delay, args.step_delay):
-        print("Clearing Stats")
+        print("CP_OFF: Clearing Stats")
         resetStats()
         runCommand([ "./tree", str(args.depth), str(x)])
-        pprint.pprint(collectStats())
+        print("CP_OFF: Collecting Stats")
+        stat = collectStats()
+        key = str(expt_idx) + "-" + "CP_OFF-" + args.subcommand + "-" + str(args.depth) + "-" + str(x)
+        allStats[key] = stat
+        expt_idx += 1
+        
+    pprint.pprint(allStats)
+    with tempfile.NamedTemporaryFile(mode='w',dir='.', delete=False, suffix=time.strftime("%Y%m%d-%H%M%S")) as fp:
+        print(fp.name) 
+        fp.write(json.dumps(allStats, sort_keys=True, indent=4))
 
 if __name__ == "__main__":
     main(sys.argv[1:])

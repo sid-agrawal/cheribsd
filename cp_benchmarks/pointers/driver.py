@@ -131,8 +131,9 @@ def handle_ll(subparser):
         expt_idx += 1
         
     pprint.pprint(allStats)
+    pre='log_' + args.subcommand + '_' + time.strftime("%Y%m%d-%H%M%S")+ '_'
     with tempfile.NamedTemporaryFile(mode='w',dir='.', 
-            delete=False, prefix='log_'+time.strftime("%Y%m%d-%H%M%S")+ '_') as fp:
+            delete=False, prefix=pre) as fp:
         print("All Stats in:", fp.name) 
         fp.write(json.dumps(allStats, sort_keys=True, indent=4))
 
@@ -188,8 +189,9 @@ def handle_tree(args):
         expt_idx += 1
         
     pprint.pprint(allStats)
+    pre='log_' + args.subcommand + '_' + time.strftime("%Y%m%d-%H%M%S")+ '_'
     with tempfile.NamedTemporaryFile(mode='w',dir='.', 
-            delete=False, prefix='log_'+time.strftime("%Y%m%d-%H%M%S")+ '_') as fp:
+            delete=False, prefix=pre) as fp:
         print("All Stats in:", fp.name) 
         fp.write(json.dumps(allStats, sort_keys=True, indent=4))
 

@@ -13,24 +13,12 @@ const char* important_stat[] = {
         "vm.v_prefetches"
         };
 
-struct run_stat{
-        char *name;
-        //bool cheri_picking_enabled;
-        //int cycle_per_node;
-        int depth;
-        struct counter{
-                char *name;
-                int value;
-        } counters[5];
-        int duration_second;
-};
-
 int sysctlRead(const char * name) {
 
        int mib[2];
        size_t mib_len, len;
        int rv;
-       int value;
+       uint value;
 
        mib_len = 2;
        rv = sysctlnametomib(name, mib, &mib_len);
@@ -38,7 +26,6 @@ int sysctlRead(const char * name) {
                printf("ERROR: sysctlnametomib %s, RV: %d, errno: %d\n",
                               name, rv, errno);
                exit(1);
-
        }
 
 
@@ -56,18 +43,17 @@ int sysctlRead(const char * name) {
                printf("ERROR: sysctl %s, RV: %d, errno: %d\n",
                                name, rv, errno);
                exit(1);
-
        }
 
        return value;
 }
 
-int sysctlWrite(const char * name, int value) {
+int sysctlWrite(const char * name, uint value) {
 
        int mib[2];
        size_t mib_len, len;
        int rv;
-       int oldValue;
+       uint oldValue;
 
        mib_len = 2;
        rv = sysctlnametomib(name, mib, &mib_len);
@@ -87,13 +73,12 @@ int sysctlWrite(const char * name, int value) {
        }
 
 
-       int newValue = value;
+       uint newValue = value;
        rv = sysctl(mib,  mib_len, &oldValue, &len, &newValue, len);
        if (rv) {
                printf("ERROR: sysctl %s, RV: %d, errno: %d\n",
                                name, rv, errno);
                exit(1);
-
        }
        
        if(newValue != value) {
@@ -102,7 +87,6 @@ int sysctlWrite(const char * name, int value) {
                       name, value, newValue);
                                
                exit(1);
-
        }
 
        return value;

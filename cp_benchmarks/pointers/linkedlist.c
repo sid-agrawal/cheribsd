@@ -96,6 +96,7 @@ int main(int argc,char* argv[])
         /* Print the stats */
         printf("{");
         printf("\"Test\": \"%s\",", "ll");
+        printf("\"CPEnabled\": %d,", sysctlRead("vm.v_cheri_prefetch"));
         printf("\"NumNodes\": %d,", num_nodes);
         printf("\"Delay\": %d,", cyclesPerNode);
         printf("\"ApproxMemoryConsumptionMB\": %d,", 

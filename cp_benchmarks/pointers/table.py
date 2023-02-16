@@ -1,45 +1,60 @@
 #!/bin/python
 
-from prettytable import PrettyTable
 import pandas as pd
+import sys
+import json
 import pprint
+import argparse
 pp = pprint.PrettyPrinter(indent=4)
 
 
 
-data = {
-        "d1": {
-                "a" : 1,
-                "b" : 2
-            },
-        "d2": {
-                "a" : 11,
-                "b" : 22
-            },
-        }
-pp.pprint(data)
+
+def handleLL(data):
+    return
 
 
-# Specify the Column Names while initializing the Table
-myTable = PrettyTable(["no", "a", "b"])
+
+def printSortedTable(test, file):
  
-# Add rows
-for key, value in data.items():
-    myTable.add_row([key, value["a"], value["b"] ])
- 
-print(myTable)
+    # Opening JSON file
+    with open(file) as json_file:
+        data = json.load(json_file)
+    
+
+    # Row ID
+    index =[]
+    for key in data:
+        index.append(key)
+        # Sanity Check that we have the right data
+        assert(data[key]['Test'] == test)
+
+    # Column Names
+    columns = []
+    for key in data:
+        for key2 in data[key]:
+            columns.append(key2)
+        # Insert only for dict, hence the break.
+        break
+
+    # Make the DF and populate it.
+    df = pd.DataFrame(columns=columns, index=index)
+    for key in data:
+         df.loc[key] = pd.Series( data[key] )
 
 
-df = pd.DataFrame(columns=['a','b'], index=['d1','d2'])
-
-df.loc['d1'] = pd.Series (data['d1']) 
-df.loc['d2'] = pd.Series (data['d2']) 
-
-pp.pprint(df)
-
-df.sort_values(by=['a'], inplace=True, ascending=False)
-pp.pprint(df)
+    # Sort it by CP and Delay
+    df.sort_values(by=['CPEnabled', 'Delay'], inplace=True, ascending=[True,True])
+    pp.pprint(df)
 
 
-def printTableFromJSON(jsonFile):
+def main(argv):
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-t','--test', help='Which test does the log belong too', required=True)
+    parser.add_argument('-f','--file', help='log file', required=True)
 
+    args = parser.parse_args()
+    printSortedTable(args.test, args.file)
+
+if __name__ == "__main__":
+    main(sys.argv[1:])

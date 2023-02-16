@@ -14,7 +14,7 @@ const char* important_stat[] = {
 
 struct run_stat{
         char *name;
-        bool cheri_picking_enabled;
+        //bool cheri_picking_enabled;
         //int cycle_per_node;
         int depth;
         struct counter{
@@ -24,7 +24,7 @@ struct run_stat{
         int duration_second;
 };
 
-int sysctlRead(char * name) {
+int sysctlRead(const char * name) {
 
        int mib[2];
        size_t mib_len, len;
@@ -61,7 +61,7 @@ int sysctlRead(char * name) {
        return value;
 }
 
-int sysctlWrite(char * name, int value) {
+int sysctlWrite(const char * name, int value) {
 
        int mib[2];
        size_t mib_len, len;
@@ -105,4 +105,21 @@ int sysctlWrite(char * name, int value) {
        }
 
        return value;
+}
+
+void clearCounters() {
+        for (int i = 0; i < sizeof(important_stat)/sizeof(char*); i++) {
+                //printf("Clearning: %s\n", important_stat[i]);
+                sysctlWrite(important_stat[i], 0);
+
+        }
+}
+
+
+void printCounters() {
+        for (int i = 0; i < sizeof(important_stat)/sizeof(char*); i++) {
+                int value = sysctlRead(important_stat[i]);
+                printf("\"%s\": %d,", important_stat[i], value);
+
+        }
 }

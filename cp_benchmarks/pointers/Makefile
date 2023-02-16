@@ -2,7 +2,7 @@ ll:
 	cc -O2 linkedlist.c -o ll
 
 tree: 
-	c++ -O2 tree.cpp -o tree
+	cc -O2 tree.c -o tree
 
 clean: 
 	rm -rf ll tree

@@ -2,6 +2,8 @@
 #include<assert.h>
 #include<errno.h>
 
+#define PAGE_SIZE 4096
+
 const char* important_stat[] = {
         "vm.v_prefetches", 
         "vm.v_majorfault",

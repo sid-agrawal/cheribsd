@@ -12,7 +12,6 @@
 int node_count = 0;
 int cycle_per_node;
 
-#define PAGE_SIZE 4096
 
 /* A binary tree node has data_int, and data_char
 pointer to left child and a

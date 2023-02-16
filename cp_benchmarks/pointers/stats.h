@@ -1,5 +1,6 @@
 #include<sys/sysctl.h>
 #include<assert.h>
+#include<errno.h>
 
 const char* important_stat[] = {
         "vm.v_prefetches", 
@@ -111,7 +112,6 @@ void clearCounters() {
         for (int i = 0; i < sizeof(important_stat)/sizeof(char*); i++) {
                 //printf("Clearning: %s\n", important_stat[i]);
                 sysctlWrite(important_stat[i], 0);
-
         }
 }
 
@@ -120,6 +120,5 @@ void printCounters() {
         for (int i = 0; i < sizeof(important_stat)/sizeof(char*); i++) {
                 int value = sysctlRead(important_stat[i]);
                 printf("\"%s\": %d,", important_stat[i], value);
-
         }
 }

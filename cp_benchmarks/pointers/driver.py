@@ -60,7 +60,7 @@ def main(argv):
 
     # create the parser for the "ll" sub-command
     parser_ll = sub_parsers.add_parser('ll', help='Linked list pointer benchmark')
-    parser_ll.add_argument('--size', type=int, help='Number of node of the LL')
+    parser_ll.add_argument('--num_nodes', type=int, help='Log of number of node of the LL')
     parser_ll.add_argument('--start-delay', type=int, help='Delay for each node visited as loop count')
     parser_ll.add_argument('--step-delay', type=int, help='Delay Increments')
     parser_ll.add_argument('--end-delay', type=int, help='End Delay')
@@ -99,8 +99,7 @@ def handle_ll(subparser):
         assert(sysctlRead("vm.v_cheri_prefetch") == 1)
 
 
-        #output = runCommand([ "./ll", str(args.depth), str(x)])
-        output = runCommand([ "./ll" ])
+        output = runCommand([ "./ll", str(args.num_nodes), str(x)])
         outputDict = json.loads(output)
         pprint.pprint(outputDict)
         print("===============")
@@ -119,8 +118,7 @@ def handle_ll(subparser):
         assert(sysctlRead("vm.v_cheri_prefetch") == 0)
 
         # Run the command
-        #output = runCommand([ "./ll", str(args.depth), str(x)])
-        output = runCommand([ "./ll" ])
+        output = runCommand([ "./ll", str(args.num_nodes), str(x)])
         outputDict = json.loads(output)
         pprint.pprint(outputDict)
         print("===============")

@@ -13,7 +13,7 @@
 #define NODE_ARRAY_SIZE 1020
 struct node {
 	struct node *next; 
-	int arr[node_array_size];
+	int arr[NODE_ARRAY_SIZE];
 }__attribute__((aligned (PAGE_SIZE)));
 
 int main(int argc,char* argv[])
@@ -95,7 +95,7 @@ int main(int argc,char* argv[])
 
         /* Print the stats */
         printf("{");
-        printf("\"Test\": \"%s\",", "tree");
+        printf("\"Test\": \"%s\",", "ll");
         printf("\"NumNodes\": %d,", num_nodes);
         printf("\"Delay\": %d,", cyclesPerNode);
         printf("\"ApproxMemoryConsumptionMB\": %d,", 

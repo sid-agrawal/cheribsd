@@ -60,7 +60,7 @@ def main(argv):
 
     # create the parser for the "ll" sub-command
     parser_ll = sub_parsers.add_parser('ll', help='Linked list pointer benchmark')
-    parser_ll.add_argument('--num_nodes', type=int, help='Log of number of node of the LL')
+    parser_ll.add_argument('--num-nodes', type=int, help='Log of number of node of the LL')
     parser_ll.add_argument('--start-delay', type=int, help='Delay for each node visited as loop count')
     parser_ll.add_argument('--step-delay', type=int, help='Delay Increments')
     parser_ll.add_argument('--end-delay', type=int, help='End Delay')
@@ -82,7 +82,7 @@ def recompileLL():
     runCommand(["gmake", "ll"])
 
 
-def handle_ll(subparser):
+def handle_ll(args):
 
     recompileLL()
 
@@ -105,7 +105,7 @@ def handle_ll(subparser):
         print("===============")
 
         key = str(expt_idx) + "-" + "CP_ON-" +  \
-            args.subcommand + "-" + str(args.depth) + "-" + str(x)
+            args.subcommand + "-" + str(args.num_nodes) + "-" + str(x)
         allStats[key] = outputDict
         expt_idx += 1
 
@@ -124,7 +124,7 @@ def handle_ll(subparser):
         print("===============")
 
         key = str(expt_idx) + "-" + "CP_OFF-" +  \
-            args.subcommand + "-" + str(args.depth) + "-" + str(x)
+            args.subcommand + "-" + str(args.num_nodes) + "-" + str(x)
         allStats[key] = outputDict
         expt_idx += 1
         

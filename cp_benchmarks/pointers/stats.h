@@ -13,7 +13,7 @@ const char* important_stat[] = {
         "vm.v_prefetches"
         };
 
-int sysctlRead(const char * name) {
+uint sysctlRead(const char * name) {
 
        int mib[2];
        size_t mib_len, len;
@@ -48,7 +48,7 @@ int sysctlRead(const char * name) {
        return value;
 }
 
-int sysctlWrite(const char * name, uint value) {
+uint sysctlWrite(const char * name, uint value) {
 
        int mib[2];
        size_t mib_len, len;
@@ -102,7 +102,7 @@ void clearCounters() {
 
 void printCounters() {
         for (int i = 0; i < sizeof(important_stat)/sizeof(char*); i++) {
-                int value = sysctlRead(important_stat[i]);
-                printf("\"%s\": %d,", important_stat[i], value);
+                uint value = sysctlRead(important_stat[i]);
+                printf("\"%s\": %u,", important_stat[i], value);
         }
 }

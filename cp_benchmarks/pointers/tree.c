@@ -21,7 +21,7 @@ struct Node
 	int data_int;
 	char data_char[PAGE_SIZE - sizeof(struct Node *) * 2 - sizeof(int)];
 	struct Node* left, * right;
-};
+}__attribute__((aligned (PAGE_SIZE)));
 
 /* Helper function that allocates a
 new node */
@@ -42,8 +42,10 @@ struct Node* insertLevelOrder(int i, int n)
 	struct Node *root = NULL;
 	// Base case for recursion
 	if (i < n)
-	{ root = newNode(node_count);
-                node_count++;
+	{ 
+		root = newNode(node_count);
+        
+		node_count++;
 		
 		// insert left child
 		root->left = insertLevelOrder(
@@ -107,7 +109,7 @@ int main(int argc,char* argv[])
         long TDur = TEnd.tv_sec - TBegin.tv_sec;
 
         /* Print Summary */
-        printf("{");
+        printf("\n{");
         printf("\"Test\": \"%s\",", "tree");
         printf("\"CPEnabled\": %d,", sysctlRead("vm.v_cheri_prefetch"));
         printf("\"Depth\": %d,", depth);
@@ -117,6 +119,6 @@ int main(int argc,char* argv[])
         printCounters();
         printf("\"ConstructionSecond\": %ld,", CDur); 
         printf("\"TraversalSecond\": %ld", TDur); 
-        printf("}");
+        printf("}\n");
 }
 

@@ -7,12 +7,11 @@
 const char* important_stat[] = {
         "vm.v_prefetches", 
         "vm.v_majorfault",
+	"vm.v_softfault",
         "vm.v_majorfault_latency",
         "vm.v_async_io_latency",
-        "vm.v_prefetches",
         "vm.v_prefetch_latency",
-        "vm.v_blocked_softfault",
-        "vm.v_prefetches"
+        "vm.v_blocked_softfault"
         };
 
 uint sysctlRead(const char * name) {

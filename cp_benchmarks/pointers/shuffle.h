@@ -39,13 +39,14 @@ void randomize ( int arr[], int n )
 
 // returns a array with n randomized numbers from 0 to n-1
 // caller has to free the array.
-int* getShuffled ( int n )
+int* getShuffled ( int n, int randomize_array)
 {
         int * arr = (int *) malloc(sizeof(int) * n);
         assert(arr != NULL);
 
         for (int i = 0; i < n; i++) { arr[i] = i; }
-        randomize( arr, n);
+        if (randomize_array) {
+		randomize( arr, n);
+	}
         return arr;
 }
-

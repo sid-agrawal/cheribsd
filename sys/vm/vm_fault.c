@@ -362,7 +362,7 @@ static int vm_cheri_readahead(struct faultstate *fs) {
 	//KASSERT(mvu <= mve, ("checking address cannot be greater than 
 	// 		page size"));
 	int count = 0;
-	for(; cheri_getaddress(mvu) < mve && count < 4097; mvu++) {
+	for(; cheri_getaddress(mvu) < mve && count < 4; mvu++) {
 		if(cheri_gettag(*mvu)) {
 			vm_offset_t vaddr = cheri_getaddress(*mvu);
 			if (trunc_page(vaddr) == 
@@ -387,8 +387,7 @@ static int vm_cheri_readahead(struct faultstate *fs) {
 			//printf("Running loop address is %lu\n",
 			//		cheri_getaddress(mvu));
 			
-			VM_OBJECT_WLOCK(obj);
-			
+			VM_OBJECT_WLOCK(obj);	
 			vm_page_t p;
 			p = vm_page_lookup(obj, pindex);
 			if (p != NULL) {
@@ -396,7 +395,7 @@ static int vm_cheri_readahead(struct faultstate *fs) {
 			} else {
 				p = vm_page_alloc(obj, pindex,
 					VM_ALLOC_NORMAL);
-				
+			
 				if(p == NULL) 
 					break;
 
@@ -409,6 +408,9 @@ static int vm_cheri_readahead(struct faultstate *fs) {
 				if(result == VM_PAGER_OK) {
 					++count;
 					p->prefetched = 1;
+					/* if (fs->vaddr + PAGE_SIZE == vaddr) 
+						fs->entry->next_read = vaddr + PAGE_SIZE;
+					*/
 					/* uint64_t base = cheri_getbase(
 							*mvu);
 					uint64_t len = cheri_getlen(
@@ -441,7 +443,6 @@ static int vm_cheri_readahead(struct faultstate *fs) {
 			vm_map_lookup_done(fs->map, entry);
 		}
 	}
-	// Calc latency of this operation.
 	if(count > 1) {
 		nanotime(&end);
 		num_prefetches++;
@@ -449,6 +450,7 @@ static int vm_cheri_readahead(struct faultstate *fs) {
 			(num_prefetches - 1) + (end.tv_nsec - start.tv_nsec)) / 
 			num_prefetches;
 	}
+
 	return 0;
 }
 
@@ -526,9 +528,9 @@ vm_fault_soft_fast(struct faultstate *fs)
 		(*fs->m_hold) = m;
 		vm_page_wire(m);
 	}
-	if (psind == 0 && !fs->wired)
+	/* if (psind == 0 && !fs->wired)
 		vm_fault_prefault(fs, vaddr, PFBAK, PFFOR, true);
-
+	*/
 	vm_cnt.v_softfault++;
 	// Cheri prefetching run for soft fault.
 	//if (vm_cnt.v_cheri_prefetch == 1)
@@ -954,8 +956,8 @@ vm_fault_readahead(struct faultstate *fs)
 		nera = 0;
 	} else if (behavior == MAP_ENTRY_BEHAV_SEQUENTIAL) {
 		nera = VM_FAULT_READ_AHEAD_MAX;
-		if (fs->vaddr == fs->entry->next_read)
-			vm_fault_dontneed(fs, fs->vaddr, nera);
+		// if (fs->vaddr == fs->entry->next_read)
+			// vm_fault_dontneed(fs, fs->vaddr, nera);
 	} else if (fs->vaddr == fs->entry->next_read) {
 		/*
 		 * This is a sequential fault.  Arithmetically
@@ -970,8 +972,8 @@ vm_fault_readahead(struct faultstate *fs)
 			if (nera > VM_FAULT_READ_AHEAD_MAX)
 				nera = VM_FAULT_READ_AHEAD_MAX;
 		}
-		if (era == VM_FAULT_READ_AHEAD_MAX)
-			vm_fault_dontneed(fs, fs->vaddr, nera);
+		// if (era == VM_FAULT_READ_AHEAD_MAX)
+			// vm_fault_dontneed(fs, fs->vaddr, nera);
 	} else {
 		/*
 		 * This is a non-sequential fault.
@@ -1511,12 +1513,18 @@ vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
 	*behindp = behind;
 	*aheadp = ahead;
 	rv = vm_pager_get_pages(fs->object, &fs->m, 1, behindp, aheadp);
-	if (vm_cnt.v_cheri_prefetch && (rv == VM_PAGER_OK && 
+	if (vm_cnt.v_cheri_prefetch==1 && (rv == VM_PAGER_OK && 
 				fs->object->type == OBJT_SWAP && 
 				!P_KILLED(curproc) && 
 				!pctrie_is_empty(
 					&fs->object->un_pager.swp.swp_blks))) {
+		
+		struct timespec start, end; 
+		nanotime(&start);
 		vm_cheri_readahead(fs);
+		nanotime(&end);
+		unsigned long long elapsed = (end.tv_sec - start.tv_sec) * (10000000) + (end.tv_nsec - start.tv_nsec);
+		printf("CP latency, %llu\n", elapsed);
 	}
 	if (rv == VM_PAGER_OK)
 		return (FAULT_HARD);
@@ -1626,9 +1634,13 @@ vm_fault_object(struct faultstate *fs, int *behindp, int *aheadp)
 		 * done.
 		 */
 		if (vm_page_all_valid(fs->m)) {
-			//if (vm_cnt.v_cheri_prefetch == 1)
-			//	vm_cheri_readahead(fs);
-			
+			 /* if (vm_cnt.v_cheri_prefetch && (
+				fs->object->type == OBJT_SWAP && 
+				!P_KILLED(curproc) && 
+				!pctrie_is_empty(
+					&fs->object->un_pager.swp.swp_blks)))
+					vm_cheri_readahead(fs);
+			*/
 			//if (fs->m->prefetched == 1) {
 			vm_cnt.v_softfault++;
 				// int softfaults = VM_CNT_FETCH(v_softfault);
@@ -1921,12 +1933,12 @@ found:
 	pmap_enter(fs.map->pmap, vaddr, fs.m,
 	    VM_OBJECT_MASK_CAP_PROT(fs.object, fs.prot),
 	    fs.fault_type | (fs.wired ? PMAP_ENTER_WIRED : 0), 0);
-	if (faultcount != 1 && (fs.fault_flags & VM_FAULT_WIRE) == 0 &&
+	/*if (faultcount != 1 && (fs.fault_flags & VM_FAULT_WIRE) == 0 &&
 	    fs.wired == 0)
 		vm_fault_prefault(&fs, vaddr,
 		    faultcount > 0 ? behind : PFBAK,
 		    faultcount > 0 ? ahead : PFFOR, false);
-
+	*/
 	/*
 	 * If the page is not wired down, then put it where the pageout daemon
 	 * can find it.

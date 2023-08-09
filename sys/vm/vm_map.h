@@ -415,7 +415,7 @@ long vmspace_resident_count(struct vmspace *vmspace);
  * account for the map entry's "read_ahead" field being defined as an uint8_t.
  */
 #define	VM_FAULT_READ_AHEAD_MIN		7
-#define	VM_FAULT_READ_AHEAD_INIT	15
+#define	VM_FAULT_READ_AHEAD_INIT	14
 #define	VM_FAULT_READ_AHEAD_MAX		min(atop(maxphys) - 1, UINT8_MAX)
 
 /*

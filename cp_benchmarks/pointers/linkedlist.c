@@ -18,8 +18,8 @@ struct node {
 
 int main(int argc,char* argv[])
 {
-        if (argc != 3){
-                printf("Usage: ll <log base 2 of num_nodes> <cyclesPerNode> \n");
+        if (argc != 4){
+                printf("Usage: ll <log base 2 of num_nodes> <cyclesPerNode> <randomize traversal>\n");
                 exit(1);
         }
 
@@ -29,7 +29,8 @@ int main(int argc,char* argv[])
 
         /* Get cyclesPerNode */
         int cyclesPerNode = atoi(argv[2]); 
-    	
+    
+	int randomize_traversal = atoi(argv[3]);
         /* Allocate and initialize the LL */
         struct node **ll = (struct node **) malloc (sizeof(struct node *) * num_nodes);
         assert(ll != NULL);
@@ -40,7 +41,7 @@ int main(int argc,char* argv[])
 	}
 
         /* Get the Random ordering */
-        int *randArr = getShuffled( num_nodes );
+        int *randArr = getShuffled( num_nodes , randomize_traversal);
 
         /* Shuffle the List */
 	int first = 1;
@@ -69,11 +70,13 @@ int main(int argc,char* argv[])
         free(randArr);
 	
 
+	printf("Traversal\n");
 
     	/* Traverse the List */
     	gettimeofday(&begin, 0);
         clearCounters();
-
+	int a;
+	// scanf("%d", &a);
 	ll_curr->next = ll[num];
 	ll_curr = ll[num];
 	ll_curr->next = NULL;
@@ -92,7 +95,7 @@ int main(int argc,char* argv[])
 
 	gettimeofday(&end, 0);
     	long TDur = end.tv_sec - begin.tv_sec;
-
+	printf("Done\n");
         /* Print the stats */
         printf("{");
         printf("\"Test\": \"%s\",", "ll");
@@ -105,6 +108,7 @@ int main(int argc,char* argv[])
         printf("\"ConstructionSecond\": %ld,", CDur); 
         printf("\"TraversalSecond\": %ld", TDur); 
         printf("}");
+	printf("\n");
 	return 0;	
 
 }

@@ -1489,7 +1489,7 @@ swap_pager_getpages_locked(vm_object_t object, vm_page_t *ma, int count,
 	uint64_t time_taken = seconds*1000000 + microseconds;
 	if (time_taken < 10000) {
 		VM_CNT_INC(v_majfault); 
-		vm_cnt.v_majorfault++;
+		vm_cnt.v_majorfault+=1;
 		vm_cnt.v_majorfault_latency = (vm_cnt.v_majorfault_latency * 
 			(vm_cnt.v_majorfault - 1) + (time_taken)) / 
 			vm_cnt.v_majorfault;
@@ -1497,6 +1497,7 @@ swap_pager_getpages_locked(vm_object_t object, vm_page_t *ma, int count,
 		//		time_taken, vm_cnt.v_majorfault_latency);
 	} else {
 		//printf("Garbage time %lu", time_taken);
+		vm_cnt.v_majorfault += 1;
 	}
 	return (VM_PAGER_OK);
 

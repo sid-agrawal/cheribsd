@@ -351,14 +351,15 @@ static int vm_cheri_readahead(struct faultstate *fs) {
 	mve = mva + PAGE_SIZE; 
 
 	mvu = cheri_setbounds(cheri_setaddress(kdc, mva), PAGE_SIZE);
-	printf("CP analysis: Faulting address %lx, faulting page %lx\n", fs->actual_vaddr, fs->vaddr);
+	printf("CP analysis: Faulting address %lx, faulting page %lx\n",		
+			fs->actual_vaddr, fs->vaddr);
 	for(; cheri_getaddress(mvu) < mve; mvu++) {
 		if(cheri_gettag(*mvu)) {
 			vm_offset_t vaddr = cheri_getaddress(*mvu);
 			if (trunc_page(vaddr) == 
 					fs->vaddr)
 				continue;
-			printf("CP analysis: Address is %lx\n", vaddr);
+			// printf("CP analysis: Address is %lx\n", vaddr);
 		}
 	}
 
@@ -1410,10 +1411,12 @@ vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
 			 * address boundary.
 			 */
 			if (!cheri_prefetch) {
-				cluster_offset = fs->pindex % VM_FAULT_READ_DEFAULT;
+				cluster_offset = fs->pindex % 
+					VM_FAULT_READ_DEFAULT;
 				behind = ulmin(cluster_offset,
 				    atop(fs->vaddr - e_start));
-				ahead = VM_FAULT_READ_DEFAULT - 1 - cluster_offset;
+				ahead = VM_FAULT_READ_DEFAULT 
+					- 1 - cluster_offset;
 			}
 		}
 		
@@ -1424,8 +1427,9 @@ vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
 	*behindp = behind;
 	*aheadp = ahead;
 	rv = vm_pager_get_pages(fs->object, &fs->m, 1, behindp, aheadp);
-	if (vm_cnt.v_cheri_prefetch==1 && (rv == VM_PAGER_OK && 
-				fs->object->type == OBJT_SWAP && 
+	if (vm_cnt.v_cheri_prefetch==1 && (rv == VM_PAGER_OK &&
+				fs->object->type == OBJT_SWAP &&
+				fs->m->a.flags & PGA_EXECUTABLE != 0 &&
 				!P_KILLED(curproc) && 
 				!pctrie_is_empty(
 					&fs->object->un_pager.swp.swp_blks))) {
@@ -1434,7 +1438,8 @@ vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
 		nanotime(&start);
 		vm_cheri_readahead(fs);
 		nanotime(&end);
-		unsigned long long elapsed = (end.tv_sec - start.tv_sec) * (10000000) + (end.tv_nsec - start.tv_nsec);
+		unsigned long long elapsed = (end.tv_sec - start.tv_sec) 
+			* (10000000) + (end.tv_nsec - start.tv_nsec);
 		printf("CP latency, %llu\n", elapsed);
 	}
 	if (rv == VM_PAGER_OK)

@@ -7,9 +7,9 @@
 #include <sys/resource.h>
 #include <sys/sysctl.h>
 
-#include "stats.h"
+//#include "stats.h"
 #include "shuffle.h"
-
+#define PAGE_SIZE 4096
 #define NODE_ARRAY_SIZE 1020
 struct node {
 	struct node *next; 
@@ -74,7 +74,7 @@ int main(int argc,char* argv[])
 
     	/* Traverse the List */
     	gettimeofday(&begin, 0);
-        clearCounters();
+        //clearCounters();
 	int a;
 	// scanf("%d", &a);
 	ll_curr->next = ll[num];
@@ -85,6 +85,7 @@ int main(int argc,char* argv[])
 
 	while(ll_curr != NULL) {
 		ll_curr = ll_curr->next;
+		// printf("%p\n", ll_curr);
 		count++;
 		if(ll_curr != NULL) {
                         for (int i = 0; i < cyclesPerNode ; i++){
@@ -96,7 +97,7 @@ int main(int argc,char* argv[])
 	gettimeofday(&end, 0);
     	long TDur = end.tv_sec - begin.tv_sec;
 	printf("Done\n");
-        /* Print the stats */
+        /* Print the stats 
         printf("{");
         printf("\"Test\": \"%s\",", "ll");
         printf("\"CPEnabled\": %d,", sysctlRead("vm.v_cheri_prefetch"));
@@ -108,7 +109,7 @@ int main(int argc,char* argv[])
         printf("\"ConstructionSecond\": %ld,", CDur); 
         printf("\"TraversalSecond\": %ld", TDur); 
         printf("}");
-	printf("\n");
+	printf("\n");*/
 	return 0;	
 
 }

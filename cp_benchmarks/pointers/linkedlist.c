@@ -84,6 +84,7 @@ int main(int argc,char* argv[])
 	ll_curr = ll_head;
 
 	while(ll_curr != NULL) {
+		printf("%lx\n", ll_curr);
 		ll_curr = ll_curr->next;
 		count++;
 		if(ll_curr != NULL) {

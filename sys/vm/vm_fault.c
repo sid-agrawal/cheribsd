@@ -122,7 +122,6 @@ __FBSDID("$FreeBSD$");
 #define	VM_FAULT_DONTNEED_MIN	1048576
 
 static uint64_t num_pagefaults = 0; 
-static uint64_t num_prefetches = 0;
 static int cheri_prefetch = 1;
 
 struct faultstate {
@@ -340,8 +339,6 @@ vm_fault_dirty(struct faultstate *fs, vm_page_t m)
  * We don't distinguish between handling the two right now.
  */
 static int vm_cheri_readahead(struct faultstate *fs) {
-	struct timespec start, end; 
-	nanotime(&start);
 	vm_offset_t mva; 
 	vm_offset_t mve; 
 	uintcap_t * __capability mvu; 
@@ -350,105 +347,19 @@ static int vm_cheri_readahead(struct faultstate *fs) {
 
 	if (!fs->m)
 		return FAULT_FAILURE;
-	//printf("Is process killed %d\n", P_KILLED(curproc));
 	mva = PHYS_TO_DMAP(VM_PAGE_TO_PHYS(fs->m));
 	mve = mva + PAGE_SIZE; 
 
-	// KASSERT(!(fs->actual_vaddr - fs->vaddr) > PAGE_SIZE);
 	mvu = cheri_setbounds(cheri_setaddress(kdc, mva), PAGE_SIZE);
-	// TODO(shaurp): Should we be starting at the faulting addr?
-	//mvu += (fs->actual_vaddr - fs->vaddr);
-
-	//KASSERT(mvu <= mve, ("checking address cannot be greater than 
-	// 		page size"));
-	int count = 0;
-	for(; cheri_getaddress(mvu) < mve && count < 4; mvu++) {
+	printf("CP analysis: Faulting address %lx, faulting page %lx\n", fs->actual_vaddr, fs->vaddr);
+	for(; cheri_getaddress(mvu) < mve; mvu++) {
 		if(cheri_gettag(*mvu)) {
 			vm_offset_t vaddr = cheri_getaddress(*mvu);
 			if (trunc_page(vaddr) == 
 					fs->vaddr)
 				continue;
-			vm_object_t obj; 
-			vm_pindex_t pindex;
-			vm_map_entry_t entry; 
-			vm_prot_t prot; 
-			boolean_t wired;
-			// printf("Calling map lookup\n");
-			int result = vm_map_lookup_prefetch(&fs->map, 
-					trunc_page(vaddr)
-					, VM_PROT_READ, &entry, &obj, 
-					&pindex, &prot, &wired);
-			
-			
-			if (result != KERN_SUCCESS) {
-				continue; 
-			}
-			
-			//printf("Running loop address is %lu\n",
-			//		cheri_getaddress(mvu));
-			
-			VM_OBJECT_WLOCK(obj);	
-			vm_page_t p;
-			p = vm_page_lookup(obj, pindex);
-			if (p != NULL) {
-				VM_CNT_INC(v_resident);
-			} else {
-				p = vm_page_alloc(obj, pindex,
-					VM_ALLOC_NORMAL);
-			
-				if(p == NULL) 
-					break;
-
-				p->oflags |= VPO_SWAPINPROG;
-				vm_object_pip_add(obj, 1);
-				VM_OBJECT_WUNLOCK(obj);
-				result = vm_pager_get_pages_async(obj, 
-						&p, 1, NULL, NULL
-						,NULL, NULL);
-				if(result == VM_PAGER_OK) {
-					++count;
-					p->prefetched = 1;
-					/* if (fs->vaddr + PAGE_SIZE == vaddr) 
-						fs->entry->next_read = vaddr + PAGE_SIZE;
-					*/
-					/* uint64_t base = cheri_getbase(
-							*mvu);
-					uint64_t len = cheri_getlen(
-							*mvu);
-					uint64_t offset = 
-						cheri_getoffset(*mvu);
-
-					printf("Base: %lx, length: %lu, 
-						offset: %lu, address: %lx\n", 
-						base, len, offset, vaddr); */
-					VM_CNT_INC(v_prefetch);
-					vm_cnt.v_prefetches++;
-
-				//	printf("Page prefetched %lx, %lu\n",
-				//	fs->actual_vaddr, 
-				//	VM_CNT_FETCH(v_prefetch));
-				} else {
-				//	printf("Page not prefetched %d, %d\n"
-				//	, result, count);
-					VM_OBJECT_WLOCK(obj);
-					vm_page_free(p);
-					vm_object_pip_wakeup(obj);	
-					VM_OBJECT_WUNLOCK(obj);
-				}
-				vm_map_lookup_done(fs->map, entry);
-				continue;
-
-			}
-			VM_OBJECT_WUNLOCK(obj);
-			vm_map_lookup_done(fs->map, entry);
+			printf("CP analysis: Address is %lx\n", vaddr);
 		}
-	}
-	if(count > 1) {
-		nanotime(&end);
-		num_prefetches++;
-		vm_cnt.v_prefetch_latency = (vm_cnt.v_prefetch_latency * 
-			(num_prefetches - 1) + (end.tv_nsec - start.tv_nsec)) / 
-			num_prefetches;
 	}
 
 	return 0;

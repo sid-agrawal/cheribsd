@@ -360,7 +360,6 @@ static int vm_cheri_readahead(struct faultstate *fs) {
 	offset = (fs->actual_vaddr - fs->vaddr);
 	offset = offset >> 7;
 	mvu += offset;
-
 	//KASSERT(mvu <= mve, ("checking address cannot be greater than 
 	// 		page size"));
 	int count = 0;

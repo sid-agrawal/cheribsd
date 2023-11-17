@@ -1429,7 +1429,7 @@ vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
 	rv = vm_pager_get_pages(fs->object, &fs->m, 1, behindp, aheadp);
 	if (vm_cnt.v_cheri_prefetch==1 && (rv == VM_PAGER_OK &&
 				fs->object->type == OBJT_SWAP &&
-				fs->m->a.flags & PGA_EXECUTABLE == 0 &&
+				(fs->m->a.flags & PGA_EXECUTABLE) == 0 &&
 				!P_KILLED(curproc) && 
 				!pctrie_is_empty(
 					&fs->object->un_pager.swp.swp_blks))) {

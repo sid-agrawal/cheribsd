@@ -5584,7 +5584,9 @@ RetryLookupLocked:
 
 	/*
 	 * Check whether this task is allowed to have this page.
-	 * TODO(shaurp): What should we really check here?
+	 * TODO(shaurp): What should we really check here? 
+	 * This seems like its for growing the stack, we should not 
+	 * be doing this here.
 	 */
 	prot = entry->protection;
 	if ((fault_typea & VM_PROT_FAULT_LOOKUP) != 0) {

@@ -369,6 +369,7 @@ static int vm_cheri_readahead(struct faultstate *fs) {
 			if (trunc_page(vaddr) == 
 					fs->vaddr || trunc_page(vaddr) == fs->vaddr + 4096)
 				continue;
+			// TODO(shaurp): Check if the page is already prefetched
 			vm_object_t obj; 
 			vm_pindex_t pindex;
 			vm_map_entry_t entry; 
@@ -392,6 +393,8 @@ static int vm_cheri_readahead(struct faultstate *fs) {
 			vm_page_t p;
 			p = vm_page_lookup(obj, pindex);
 			if (p != NULL) {
+				// This might also be because we already
+				// prefetched the pointer.
 				VM_CNT_INC(v_resident);
 			} else {
 				p = vm_page_alloc(obj, pindex,
@@ -403,6 +406,7 @@ static int vm_cheri_readahead(struct faultstate *fs) {
 				p->oflags |= VPO_SWAPINPROG;
 				vm_object_pip_add(obj, 1);
 				VM_OBJECT_WUNLOCK(obj);
+				// can this do multiple objects at a time?
 				result = vm_pager_get_pages_async(obj, 
 						&p, 1, NULL, NULL
 						,NULL, NULL);
@@ -410,7 +414,8 @@ static int vm_cheri_readahead(struct faultstate *fs) {
 					++count;
 					p->prefetched = 1;
 					/* if (fs->vaddr + PAGE_SIZE == vaddr) 
-						fs->entry->next_read = vaddr + PAGE_SIZE;
+						fs->entry->next_read = vaddr 
+						+ PAGE_SIZE;
 					*/
 					/* uint64_t base = cheri_getbase(
 							*mvu);

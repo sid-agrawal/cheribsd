@@ -366,7 +366,7 @@ static int vm_cheri_readahead(struct faultstate *fs) {
 		if(cheri_gettag(*mvu)) {
 			vm_offset_t vaddr = cheri_getaddress(*mvu);
 			if (trunc_page(vaddr) == 
-					fs->vaddr)
+					fs->vaddr || trunc_page(vaddr) == fs->vaddr + 4096)
 				continue;
 			vm_object_t obj; 
 			vm_pindex_t pindex;
@@ -1516,6 +1516,7 @@ vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
 	if (vm_cnt.v_cheri_prefetch==1 && (rv == VM_PAGER_OK && 
 				fs->object->type == OBJT_SWAP && 
 				!P_KILLED(curproc) && 
+				(fs->m->a.flags & PGA_EXECUTABLE) == 0 &&
 				!pctrie_is_empty(
 					&fs->object->un_pager.swp.swp_blks))) {
 		
@@ -1524,7 +1525,8 @@ vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
 		vm_cheri_readahead(fs);
 		nanotime(&end);
 		unsigned long long elapsed = (end.tv_sec - start.tv_sec) * (10000000) + (end.tv_nsec - start.tv_nsec);
-		printf("CP latency, %llu\n", elapsed);
+		elapsed++;
+		//printf("CP latency, %llu\n", elapsed);
 	}
 	if (rv == VM_PAGER_OK)
 		return (FAULT_HARD);

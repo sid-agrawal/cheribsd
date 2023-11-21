@@ -349,10 +349,11 @@ static int vm_cheri_readahead(struct faultstate *fs) {
 		return FAULT_FAILURE;
 	mva = PHYS_TO_DMAP(VM_PAGE_TO_PHYS(fs->m));
 	printf("mva before: %lx\n", mva);
-	printf("mva after %lx\n", mva);
-	mva += fs->actual_vaddr - fs->vaddr;
-
+	// Align to page boundary.
 	mve = mva + PAGE_SIZE; 
+	
+	mva += fs->actual_vaddr - fs->vaddr;
+	printf("mva after %lx\n", mva);
 
 	mvu = cheri_setbounds(cheri_setaddress(kdc, mva), PAGE_SIZE);
 
@@ -1448,7 +1449,8 @@ vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
 		nanotime(&end);
 		unsigned long long elapsed = (end.tv_sec - start.tv_sec) 
 			* (10000000) + (end.tv_nsec - start.tv_nsec);
-		printf("CP latency, %llu\n", elapsed);
+		elapsed++;
+		// printf("CP latency, %llu\n", elapsed);
 	}
 	if (rv == VM_PAGER_OK)
 		return (FAULT_HARD);

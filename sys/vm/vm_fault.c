@@ -441,6 +441,7 @@ static int vm_cheri_readahead(struct faultstate *fs) {
 					vm_object_pip_wakeup(obj);	
 					VM_OBJECT_WUNLOCK(obj);
 				}
+				// Change this to unlock_map(fs);
 				vm_map_lookup_done(fs->map, entry);
 				continue;
 
@@ -1530,9 +1531,18 @@ vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
 		nanotime(&start);
 		vm_cheri_readahead(fs);
 		nanotime(&end);
+<<<<<<< HEAD
 		unsigned long long elapsed = (end.tv_sec - start.tv_sec) * (10000000) + (end.tv_nsec - start.tv_nsec);
 		elapsed++;
 		//printf("CP latency, %llu\n", elapsed);
+||||||| constructed merge base
+		unsigned long long elapsed = (end.tv_sec - start.tv_sec) * (10000000) + (end.tv_nsec - start.tv_nsec);
+		printf("CP latency, %llu\n", elapsed);
+=======
+		unsigned long long elapsed = (end.tv_sec - start.tv_sec) * 
+			(10000000) + (end.tv_nsec - start.tv_nsec);
+		printf("CP latency, %llu\n", elapsed);
+>>>>>>> formating
 	}
 	if (rv == VM_PAGER_OK)
 		return (FAULT_HARD);

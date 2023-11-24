@@ -1321,7 +1321,7 @@ swap_pager_getpages_locked(vm_object_t object, vm_page_t *ma, int count,
     int *rbehind, int *rahead)
 {
 	// For now this tracks explicit swap ins.
-	struct timeval start, end; 
+	struct timeval start, end;
 	microtime(&start);
 	struct buf *bp;
 	vm_page_t bm, mpred, msucc, p;

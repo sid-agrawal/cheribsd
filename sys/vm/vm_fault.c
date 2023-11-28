@@ -344,6 +344,7 @@ static int vm_cheri_readahead(struct faultstate *fs) {
 	nanotime(&start);
 	vm_offset_t mva; 
 	vm_offset_t mve; 
+	unsigned long offset; 
 	uintcap_t * __capability mvu; 
 	void * __capability kdc = swap_restore_cap; 
 
@@ -356,13 +357,14 @@ static int vm_cheri_readahead(struct faultstate *fs) {
 
 	// KASSERT(!(fs->actual_vaddr - fs->vaddr) > PAGE_SIZE);
 	mvu = cheri_setbounds(cheri_setaddress(kdc, mva), PAGE_SIZE);
-	// TODO(shaurp): Should we be starting at the faulting addr?
-	//mvu += (fs->actual_vaddr - fs->vaddr);
+	offset = (fs->actual_vaddr - fs->vaddr);
+	offset = offset >> 7;
+	mvu += offset;
 
 	//KASSERT(mvu <= mve, ("checking address cannot be greater than 
 	// 		page size"));
 	int count = 0;
-	for(; cheri_getaddress(mvu) < mve && count < 4; mvu++) {
+	for(; cheri_getaddress(mvu) < mve && count < 1; mvu++) {
 		if(cheri_gettag(*mvu)) {
 			vm_offset_t vaddr = cheri_getaddress(*mvu);
 			if (trunc_page(vaddr) == 
@@ -1518,7 +1520,7 @@ vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
 				!P_KILLED(curproc) && 
 				(fs->m->a.flags & PGA_EXECUTABLE) == 0 &&
 				!pctrie_is_empty(
-					&fs->object->un_pager.swp.swp_blks))) {
+					&fs->m->object->un_pager.swp.swp_blks))) {
 		
 		struct timespec start, end; 
 		nanotime(&start);

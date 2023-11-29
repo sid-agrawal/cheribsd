@@ -434,6 +434,7 @@ data_abort(struct thread *td, struct trapframe *frame, uint64_t esr,
 	}
 
 	/* Fault in the page. */
+	printf("PC: %lx\n", tf_x[14]);
 	error = vm_fault_trap(map, far, ftype, VM_FAULT_NORMAL, &sig, &ucode);
 	if (error != KERN_SUCCESS) {
 bad_far:

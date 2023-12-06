@@ -433,11 +433,13 @@ data_abort(struct thread *td, struct trapframe *frame, uint64_t esr,
 		break;
 	}
 
-	/* Fault in the page. */
-	printf("PC: %lx\n", tf_x[14]);
-	error = vm_fault_trap(map, far, ftype, VM_FAULT_NORMAL, &sig, &ucode);
+	error = vm_fault_trap(map, frame->tf_elr, far, ftype, VM_FAULT_NORMAL, &sig, &ucode);
 	if (error != KERN_SUCCESS) {
 bad_far:
+		/* Fault in the page. */
+		// printf("PC: %lx\n", frame->tf_x[14]);
+		printf("PC ELR: %lx\n",  (uint64_t)frame->tf_elr);
+	
 		if (lower) {
 			call_trapsignal(td, sig, ucode,
 			    (void * __capability)(uintcap_t)far,

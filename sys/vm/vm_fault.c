@@ -820,7 +820,7 @@ _Static_assert(UCODE_PAGEFLT == T_PAGEFLT, "T_PAGEFLT");
  *	Caller may hold no locks.
  */
 int
-vm_fault_trap(vm_map_t map, vm_offset_t vaddr, vm_prot_t fault_type,
+vm_fault_trap(vm_map_t map, unsigned long PC, vm_offset_t vaddr, vm_prot_t fault_type,
     int fault_flags, int *signo, int *ucode)
 {
 	int result, segv_ucode;
@@ -1531,18 +1531,8 @@ vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
 		nanotime(&start);
 		vm_cheri_readahead(fs);
 		nanotime(&end);
-<<<<<<< HEAD
 		unsigned long long elapsed = (end.tv_sec - start.tv_sec) * (10000000) + (end.tv_nsec - start.tv_nsec);
 		elapsed++;
-		//printf("CP latency, %llu\n", elapsed);
-||||||| constructed merge base
-		unsigned long long elapsed = (end.tv_sec - start.tv_sec) * (10000000) + (end.tv_nsec - start.tv_nsec);
-		printf("CP latency, %llu\n", elapsed);
-=======
-		unsigned long long elapsed = (end.tv_sec - start.tv_sec) * 
-			(10000000) + (end.tv_nsec - start.tv_nsec);
-		printf("CP latency, %llu\n", elapsed);
->>>>>>> formating
 	}
 	if (rv == VM_PAGER_OK)
 		return (FAULT_HARD);

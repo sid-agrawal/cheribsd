@@ -1,5 +1,5 @@
 ll: 
-	gcc -g linkedlist.c -o ll
+	cc -g linkedlist.c -o ll
 
 tree: 
 	cc tree.c -o tree

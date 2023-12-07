@@ -129,6 +129,7 @@ struct faultstate {
 	/* Fault parameters. */
 	vm_offset_t	vaddr;
 	vm_offset_t	actual_vaddr;
+	uint64_t	pc; /* User program counter that caused the fault. */
 	vm_page_t	*m_hold;
 	vm_prot_t	fault_type;
 	vm_prot_t	prot;
@@ -429,6 +430,7 @@ static int vm_cheri_readahead(struct faultstate *fs) {
 						base, len, offset, vaddr); */
 					VM_CNT_INC(v_prefetch);
 					vm_cnt.v_prefetches++;
+					printf("PC is %lx\n", fs->pc);
 
 				//	printf("Page prefetched %lx, %lu\n",
 				//	fs->actual_vaddr, 
@@ -820,7 +822,7 @@ _Static_assert(UCODE_PAGEFLT == T_PAGEFLT, "T_PAGEFLT");
  *	Caller may hold no locks.
  */
 int
-vm_fault_trap(vm_map_t map, unsigned long PC, vm_offset_t vaddr, vm_prot_t fault_type,
+vm_fault_trap(vm_map_t map, uint64_t PC, vm_offset_t vaddr, vm_prot_t fault_type,
     int fault_flags, int *signo, int *ucode)
 {
 	int result, segv_ucode;
@@ -830,8 +832,8 @@ vm_fault_trap(vm_map_t map, unsigned long PC, vm_offset_t vaddr, vm_prot_t fault
 	if (map != kernel_map && KTRPOINT(curthread, KTR_FAULT))
 		ktrfault(vaddr, fault_type);
 #endif
-	result = vm_fault(map, vaddr,trunc_page(vaddr), fault_type, fault_flags,
-	    NULL);
+	result = vm_fault(map, pc, vaddr, trunc_page(vaddr), fault_type, 
+			fault_flags, NULL);
 	KASSERT(result == KERN_SUCCESS || result == KERN_FAILURE ||
 	    result == KERN_INVALID_ADDRESS ||
 	    result == KERN_RESOURCE_SHORTAGE ||
@@ -1524,6 +1526,7 @@ vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
 				fs->object->type == OBJT_SWAP && 
 				!P_KILLED(curproc) && 
 				(fs->m->a.flags & PGA_EXECUTABLE) == 0 &&
+				fs->pc != 0 &&
 				!pctrie_is_empty(
 					&fs->m->object->un_pager.swp.swp_blks))) {
 		
@@ -1716,8 +1719,8 @@ vm_fault_object(struct faultstate *fs, int *behindp, int *aheadp)
 }
 
 int
-vm_fault(vm_map_t map, vm_offset_t actual_vaddr, vm_offset_t vaddr, vm_prot_t fault_type,
-    int fault_flags, vm_page_t *m_hold)
+vm_fault(vm_map_t map, uint64_t pc, vm_offset_t actual_vaddr, vm_offset_t vaddr,
+		vm_prot_t fault_type, int fault_flags, vm_page_t *m_hold)
 {
 	struct faultstate fs;
 	int ahead, behind, faultcount, rv;
@@ -1730,6 +1733,7 @@ vm_fault(vm_map_t map, vm_offset_t actual_vaddr, vm_offset_t vaddr, vm_prot_t fa
 		return (KERN_PROTECTION_FAILURE);
 
 	fs.vp = NULL;
+	fs.pc = pc;
 	fs.vaddr = vaddr;
 	fs.actual_vaddr = actual_vaddr; 
 	fs.m_hold = m_hold;
@@ -2228,7 +2232,7 @@ vm_fault_quick_hold_pages(vm_map_t map, void * __capability addr, vm_size_t len,
 		    (curthread->td_pflags & TDP_NOFAULTING) != 0)
 			goto error;
 		for (mp = ma, va = start; va < end; mp++, va += PAGE_SIZE)
-			if (*mp == NULL && vm_fault(map, va, va, prot,
+			if (*mp == NULL && vm_fault(map, 0, va, va, prot,
 			    VM_FAULT_NORMAL, mp) != KERN_SUCCESS)
 				goto error;
 	}

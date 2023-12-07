@@ -2221,7 +2221,7 @@ core_output(char * __capability base, size_t len, off_t offset,
 		for (runlen = 0; runlen < len; runlen += PAGE_SIZE) {
 			if (core_dump_can_intr && curproc_sigkilled())
 				return (EINTR);
-			error = vm_fault(map, (ptraddr_t)(uintcap_t)base + runlen, (ptraddr_t)(uintcap_t)base + runlen,
+			error = vm_fault(map, 0, (ptraddr_t)(uintcap_t)base + runlen, (ptraddr_t)(uintcap_t)base + runlen,
 			    VM_PROT_READ, VM_FAULT_NOFILL, NULL);
 			if (runlen == 0)
 				success = error == KERN_SUCCESS;

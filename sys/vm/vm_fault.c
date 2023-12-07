@@ -358,13 +358,16 @@ static int vm_cheri_readahead(struct faultstate *fs) {
 
 	printf("CP analysis: Faulting address %lx, faulting page %lx\n",		
 			fs->actual_vaddr, fs->vaddr);
+	int count = 0;
 	for(; cheri_getaddress(mvu) < mve; mvu++) {
+		++count;
 		if(cheri_gettag(*mvu)) {
 			vm_offset_t vaddr = cheri_getaddress(*mvu);
 			if (trunc_page(vaddr) == 
 					fs->vaddr)
 				continue;
-			printf("CP analysis: Address is %lx\n", vaddr);
+			printf("CP analysis: Address is %lx, offset is %d\n", 
+					vaddr, count);
 		}
 	}
 

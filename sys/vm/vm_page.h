@@ -251,7 +251,7 @@ struct vm_page {
 	uint8_t oflags;			/* page VPO_* flags (O) */
 	int8_t psind;			/* pagesizes[] index (O) */
 	int8_t segind;			/* vm_phys segment index (C) */
-	uint8_t prefetched;		/* Page prefetched by prefetcher */
+	uint8_t prefetched;		/* Page prefetched by CHERI prefetcher */
 	/* NOTE that these must support one bit per DEV_BSIZE in a page */
 	/* so, on normal X86 kernels, they must be at least 8 bits wide */
 	vm_page_bits_t valid;		/* valid DEV_BSIZE chunk map (O,B) */

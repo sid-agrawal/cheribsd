@@ -124,6 +124,7 @@ __FBSDID("$FreeBSD$");
 static uint64_t num_pagefaults = 0; 
 static uint64_t num_prefetches = 0;
 static int cheri_prefetch = 1;
+// static struct pc_data * pc_data_cache = NULL;
 
 struct faultstate {
 	/* Fault parameters. */
@@ -164,6 +165,19 @@ struct faultstate {
 	struct vnode	*vp;
 };
 
+/*
+ * Struct to track per PC data for cheri-picking.
+ * The prev_prefetch_count is updated using the number of hits
+ * in each window.
+ */
+/* 
+struct pc_data {
+	uint64_t pc; 
+	uint64_t prev_prefetch_count;
+	uint64_t curr_window_count;
+	struct pc_data *next; 
+};
+*/
 /*
  * Return codes for internal fault routines.
  */
@@ -336,6 +350,20 @@ vm_fault_dirty(struct faultstate *fs, vm_page_t m)
 	}
 
 }
+
+/* 
+static struct pc_data * check_pc_data_cache(uint64_t pc) {
+	struct pc_data * curr = pc_data_cache;
+	while(next != NULL) {
+		if (curr->pc == pc)
+			return curr;
+		curr = curr->next; 
+	}
+
+	return NULL;
+
+}
+*/
 /*
  * Runs the cheri prefetcher for softfaults and majorfaults
  * We don't distinguish between handling the two right now.
@@ -368,7 +396,8 @@ static int vm_cheri_readahead(struct faultstate *fs) {
 		if(cheri_gettag(*mvu)) {
 			vm_offset_t vaddr = cheri_getaddress(*mvu);
 			if (trunc_page(vaddr) == 
-					fs->vaddr || trunc_page(vaddr) == fs->vaddr + 4096)
+					fs->vaddr || 
+					trunc_page(vaddr) == fs->vaddr + 4096)
 				continue;
 			// TODO(shaurp): Check if the page is already prefetched
 			vm_object_t obj; 
@@ -386,9 +415,6 @@ static int vm_cheri_readahead(struct faultstate *fs) {
 			if (result != KERN_SUCCESS) {
 				continue; 
 			}
-			
-			//printf("Running loop address is %lu\n",
-			//		cheri_getaddress(mvu));
 			
 			VM_OBJECT_WLOCK(obj);	
 			vm_page_t p;
@@ -432,9 +458,6 @@ static int vm_cheri_readahead(struct faultstate *fs) {
 					vm_cnt.v_prefetches++;
 					printf("PC is %lx\n", fs->pc);
 
-				//	printf("Page prefetched %lx, %lu\n",
-				//	fs->actual_vaddr, 
-				//	VM_CNT_FETCH(v_prefetch));
 				} else {
 				//	printf("Page not prefetched %d, %d\n"
 				//	, result, count);
@@ -1634,7 +1657,6 @@ vm_fault_object(struct faultstate *fs, int *behindp, int *aheadp)
 			vm_cnt.v_pagefault_latency = (vm_cnt.v_pagefault_latency * 
 					(num_pagefaults - 1) + (cycle2 - cycle1)) 
 					/ num_pagefaults;
-//			printf("Total cycles in blocked softfault is %lu\n", cycle2 - cycle1);
 			
 			return (FAULT_RESTART);
 		}
@@ -1645,26 +1667,16 @@ vm_fault_object(struct faultstate *fs, int *behindp, int *aheadp)
 		 * done.
 		 */
 		if (vm_page_all_valid(fs->m)) {
-			 /* if (vm_cnt.v_cheri_prefetch && (
-				fs->object->type == OBJT_SWAP && 
-				!P_KILLED(curproc) && 
-				!pctrie_is_empty(
-					&fs->object->un_pager.swp.swp_blks)))
-					vm_cheri_readahead(fs);
-			*/
-			//if (fs->m->prefetched == 1) {
+			// TODO(shaurp): Update per PC stats here.
 			vm_cnt.v_softfault++;
-				// int softfaults = VM_CNT_FETCH(v_softfault);
-				/* if (softfaults % 10000 == 0)
-					printf("Softfaults: %d\n", softfaults);
-				*/
+			if (fs->m->prefetched == 1)
+				printf("Prefetched\n");
 			fs->m->prefetched = 0;
 			uint64_t cycle2 = get_cyclecount();
 			num_pagefaults++; 
 			vm_cnt.v_pagefault_latency = (vm_cnt.v_pagefault_latency * 
 					(num_pagefaults - 1) + (cycle2 - cycle1)) 
 					/ num_pagefaults;
-//			printf("Total cycles in softfault is %lu\n", cycle2 - cycle1);
 			
 			VM_OBJECT_WUNLOCK(fs->object);
 			return (FAULT_SOFT);

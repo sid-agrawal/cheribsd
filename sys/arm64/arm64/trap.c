@@ -437,8 +437,6 @@ data_abort(struct thread *td, struct trapframe *frame, uint64_t esr,
 	if (error != KERN_SUCCESS) {
 bad_far:
 		/* Fault in the page. */
-		// printf("PC: %lx\n", frame->tf_x[14]);
-		printf("PC ELR: %lx\n",  (uint64_t)frame->tf_elr);
 	
 		if (lower) {
 			call_trapsignal(td, sig, ucode,

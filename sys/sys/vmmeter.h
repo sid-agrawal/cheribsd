@@ -135,6 +135,8 @@ struct vmmeter {
 	 */
         u_int v_majorfault;      /* (p) major page faults */
         u_int v_softfault;      /* (p) soft page faults */
+	u_int v_cheri_softfault; /* (p) sotfaults caused due to cheri
+				    prefetches*/
         u_int v_pagefault_latency; /* (p) soLatency of cheri prefetcher */
         u_int v_prefetch_latency;  /* (p) Latency of cheri prefetcher */
         u_int v_async_io_latency;  /* (p) I/O latency for cheri prefetcher */

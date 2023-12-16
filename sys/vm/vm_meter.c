@@ -128,6 +128,9 @@ SYSCTL_UINT(_vm, OID_AUTO, v_free_severe,
 	CTLFLAG_RW, &vm_cnt.v_free_severe, 0, "Severe page depletion point");
 SYSCTL_UINT(_vm, VM_V_SOFTFAULT, v_softfault,
 		CTLFLAG_RW, &vm_cnt.v_softfault, 0, "Number of soft faults");
+SYSCTL_UINT(_vm, VM_V_CHERI_SOFTFAULT, v_cheri_softfault,
+		CTLFLAG_RW, &vm_cnt.v_cheri_softfault, 0, "Number of Cheri
+		soft faults");
 SYSCTL_UINT(_vm, VM_V_PREFETCHES, v_prefetches,
 		CTLFLAG_RW, &vm_cnt.v_prefetches, 0, "Number of cheri prefetches");
 SYSCTL_UINT(_vm, VM_V_BLOCKED_SOFTFAULT, v_blocked_softfault,

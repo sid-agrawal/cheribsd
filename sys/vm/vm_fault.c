@@ -113,6 +113,7 @@ __FBSDID("$FreeBSD$");
 #include <vm/vm_pager.h>
 #include <vm/vm_extern.h>
 #include <vm/vm_reserv.h>
+#include <sys/malloc.h>
 
 #define PFBAK 4
 #define PFFOR 4
@@ -170,14 +171,13 @@ struct faultstate {
  * The prev_prefetch_count is updated using the number of hits
  * in each window.
  */
-/* 
 struct pc_data {
 	uint64_t pc; 
 	uint64_t prev_prefetch_count;
 	uint64_t curr_window_count;
 	struct pc_data *next; 
 };
-*/
+
 /*
  * Return codes for internal fault routines.
  */
@@ -351,7 +351,26 @@ vm_fault_dirty(struct faultstate *fs, vm_page_t m)
 
 }
 
-/* 
+static struct pc_data * allocate_new_pc_data_cache(uint64_t pc) {
+	struct pc_data *curr = pc_data_cache; 
+
+	while(curr->next != NULL) 
+		curr = curr->next; 
+	
+	struct pc_data * new  = malloc(sizeof(struct pc_data), M_CACHE, M_NOWAIT);
+
+	// Error in allocation
+	if (!new) 
+		return NULL; 
+
+	curr->next = new;
+	new->pc = pc; 
+	new->prev_prefetch_count = 0; 
+	new->curr_window_count = 0;
+	new->next = NULL;
+	return new;
+
+}
 static struct pc_data * check_pc_data_cache(uint64_t pc) {
 	struct pc_data * curr = pc_data_cache;
 	while(next != NULL) {
@@ -359,11 +378,11 @@ static struct pc_data * check_pc_data_cache(uint64_t pc) {
 			return curr;
 		curr = curr->next; 
 	}
-
+	
 	return NULL;
 
 }
-*/
+
 /*
  * Runs the cheri prefetcher for softfaults and majorfaults
  * We don't distinguish between handling the two right now.
@@ -1556,7 +1575,8 @@ vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
 				(fs->m->a.flags & PGA_EXECUTABLE) == 0 &&
 				fs->pc != 0 &&
 				!pctrie_is_empty(
-					&fs->m->object->un_pager.swp.swp_blks))) {
+					&fs->m->object->un_pager.swp.swp_blks))) 
+	{
 		
 		struct timespec start, end; 
 		nanotime(&start);

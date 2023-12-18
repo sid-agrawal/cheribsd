@@ -566,7 +566,7 @@ vm_fault_soft_fast(struct faultstate *fs)
 	vm_cnt.v_softfault++;
 	if (m->prefetched == 1) {
 		m->prefetched = 0; 
-		printf("Cheri prefetched page\n");
+		vm_cnt.v_cheri_softfault++;
 	}
 	// Cheri prefetching run for soft fault.
 	// The reason this might not be working is fs->m is NULL.
@@ -1675,7 +1675,7 @@ vm_fault_object(struct faultstate *fs, int *behindp, int *aheadp)
 			// TODO(shaurp): Update per PC stats here.
 			vm_cnt.v_softfault++;
 			if (fs->m->prefetched == 1)
-				printf("CHERI Prefetched\n");
+				vm_cnt.v_cheri_softfault++;	
 			fs->m->prefetched = 0;
 			uint64_t cycle2 = get_cyclecount();
 			num_pagefaults++; 

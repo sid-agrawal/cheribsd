@@ -98,6 +98,7 @@
 #define VM_V_ASYNC_IO_LATENCY	21      /* vm_cnt.v_async_io_latency */
 #define VM_V_MAJORFAULT_LATENCY	22      /* vm_cnt.v_majorfault_latency */
 #define VM_V_CHERI_PREFETCH	23      /* vm_cnt.v_cheri_prefetch */
+#define VM_V_CHERI_SOFTFAULT    24      /* vm_cnt.v_cheri_softfault */
 /*
  * Structure for swap device statistics
  */

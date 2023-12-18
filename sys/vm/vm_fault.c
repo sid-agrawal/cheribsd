@@ -354,7 +354,7 @@ vm_fault_dirty(struct faultstate *fs, vm_page_t m)
 static struct pc_data * check_and_allocate_pc_data(uint64_t pc) {
 	struct pc_data *curr = pc_data_cache; 
 
-	while(curr->next != NULL) {
+	while(curr && curr->next != NULL) {
 		curr = curr->next;
 		if (curr->pc == pc)
 			return curr;

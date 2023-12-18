@@ -125,7 +125,7 @@ __FBSDID("$FreeBSD$");
 static uint64_t num_pagefaults = 0; 
 static uint64_t num_prefetches = 0;
 static int cheri_prefetch = 1;
-// static struct pc_data * pc_data_cache = NULL;
+static struct pc_data * pc_data_cache = NULL;
 
 struct faultstate {
 	/* Fault parameters. */
@@ -351,11 +351,14 @@ vm_fault_dirty(struct faultstate *fs, vm_page_t m)
 
 }
 
-static struct pc_data * allocate_new_pc_data_cache(uint64_t pc) {
+static struct pc_data * check_and_allocate_pc_data(uint64_t pc) {
 	struct pc_data *curr = pc_data_cache; 
 
-	while(curr->next != NULL) 
-		curr = curr->next; 
+	while(curr->next != NULL) {
+		curr = curr->next;
+		if (curr->pc == pc)
+			return curr;
+	}
 	
 	struct pc_data * new  = malloc(sizeof(struct pc_data), M_CACHE, M_NOWAIT);
 
@@ -373,7 +376,7 @@ static struct pc_data * allocate_new_pc_data_cache(uint64_t pc) {
 }
 static struct pc_data * check_pc_data_cache(uint64_t pc) {
 	struct pc_data * curr = pc_data_cache;
-	while(next != NULL) {
+	while(curr != NULL) {
 		if (curr->pc == pc)
 			return curr;
 		curr = curr->next; 
@@ -459,6 +462,7 @@ static int vm_cheri_readahead(struct faultstate *fs) {
 				if(result == VM_PAGER_OK) {
 					++count;
 					p->prefetched = 1;
+					check_and_allocate_pc_data(fs->pc);
 					/* if (fs->vaddr + PAGE_SIZE == vaddr) 
 						fs->entry->next_read = vaddr 
 						+ PAGE_SIZE;

@@ -125,7 +125,6 @@ __FBSDID("$FreeBSD$");
 static uint64_t num_pagefaults = 0; 
 static uint64_t num_prefetches = 0;
 static int cheri_prefetch = 1;
-static struct pc_data * pc_data_cache = NULL;
 
 struct faultstate {
 	/* Fault parameters. */
@@ -170,14 +169,20 @@ struct faultstate {
  * Struct to track per PC data for cheri-picking.
  * The prev_prefetch_count is updated using the number of hits
  * in each window.
+ * TODO(shaurp): Does average hits ever make sense?
  */
 struct pc_data {
 	uint64_t pc; 
 	uint64_t prev_prefetch_count;
 	uint64_t curr_window_count;
-	struct pc_data *next; 
+	uint64_t total_hits;
+	struct rwlock lock;
 };
 
+// TODO(shaurp): Does it make sense to have this per CPU? To prevent locking 
+// overhead.
+static struct pc_data pc_data_cache[2048];
+static int curr_pc_data = 0;
 /*
  * Return codes for internal fault routines.
  */
@@ -351,27 +356,80 @@ vm_fault_dirty(struct faultstate *fs, vm_page_t m)
 
 }
 
-static struct pc_data * check_and_allocate_pc_data(uint64_t pc) {
+/*
+ * Allocate and update the pc data cache. 
+ * We return the address and the value can be modified by the caller.
+ * Appropriate locking is necessary.
+ */
+static struct pc_data * check_or_allocate_pc_data(uint64_t pc) {
+
+	for (int i =0; i < curr_pc_data; i++) {
+		if (pc_data_cache[i].pc == pc)
+			return &pc_data_cache[i];
+	}
+	if (curr_pc_data >= 2048) 
+		return NULL;
+
+	rw_wlock(pc_data_cache[curr_pc_data].lock);
+	pc_data_cache[curr_pc_data].pc = pc;
+	pc_data_cache[curr_pc_data].prev_prefetch_count = 0;
+	pc_data_cache[curr_pc_data].curr_window_count = 0;
+	rw_wunlock(pc_data_cache[curr_pc_data].lock);
+	curr_pc_data++;
+	return &pc_data_cache[curr_pc_data - 1];
+}
+
+/*
+ * Update total hits per PC
+ */
+static bool update_pc_hits(uint64_t pc) {
+	
+	for (int i =0; i < curr_pc_data; i++) {
+		if (pc_data_cache[i].pc == pc) {
+			rw_wlock(pc_data_cache[i].lock);
+			pc_data_cache[i].hits++;
+			rw.wunlock(pc_data_cache[i].lock);
+			return true; 
+		}
+	}
+	return false;
+}
+
+// TODO(shaurp): Trigger this function.
+static print_pc_data_cache() {
+	for(int i =0; i < curr_pc_data; i++) {
+		print("PC: %lx, hits: %lu\n", 
+				pc_data_cache[i].pc, pc_data_cache[i].hits);
+	}
+}
+
+/*
+static struct pc_data * check_or_allocate_pc_data(uint64_t pc, bool allocate) {
 	struct pc_data *curr = pc_data_cache; 
 
+	// Todo: There is a bug here. 
 	while(curr && curr->next != NULL) {
 		curr = curr->next;
 		if (curr->pc == pc)
 			return curr;
 	}
 	
-	struct pc_data * new  = malloc(sizeof(struct pc_data), M_CACHE, M_NOWAIT);
+	if (allocate) {
+		struct pc_data * new  = malloc(sizeof(struct pc_data), M_CACHE, M_NOWAIT);
 
-	// Error in allocation
-	if (!new) 
-		return NULL; 
+		// Error in allocation
+		if (!new) 
+			return NULL; 
 
-	curr->next = new;
-	new->pc = pc; 
-	new->prev_prefetch_count = 0; 
-	new->curr_window_count = 0;
-	new->next = NULL;
-	return new;
+		curr->next = new;
+		new->pc = pc; 
+		new->prev_prefetch_count = 0; 
+		new->curr_window_count = 0;
+		new->next = NULL;
+		return new;
+	}
+
+	return NULL;
 
 }
 static struct pc_data * check_pc_data_cache(uint64_t pc) {
@@ -385,6 +443,7 @@ static struct pc_data * check_pc_data_cache(uint64_t pc) {
 	return NULL;
 
 }
+*/
 
 /*
  * Runs the cheri prefetcher for softfaults and majorfaults
@@ -417,6 +476,7 @@ static int vm_cheri_readahead(struct faultstate *fs) {
 	for(; cheri_getaddress(mvu) < mve && count < 1; mvu++) {
 		if(cheri_gettag(*mvu)) {
 			vm_offset_t vaddr = cheri_getaddress(*mvu);
+			// Give the default prefetcher a chance to run.
 			if (trunc_page(vaddr) == 
 					fs->vaddr || 
 					trunc_page(vaddr) == fs->vaddr + 4096)
@@ -462,7 +522,9 @@ static int vm_cheri_readahead(struct faultstate *fs) {
 				if(result == VM_PAGER_OK) {
 					++count;
 					p->prefetched = 1;
-					check_and_allocate_pc_data(fs->pc);
+					// Allocate or check per PC data.
+					struct pc_data *pc_data =
+						check_and_allocate_pc_data(fs->pc);
 					/* if (fs->vaddr + PAGE_SIZE == vaddr) 
 						fs->entry->next_read = vaddr 
 						+ PAGE_SIZE;
@@ -588,7 +650,8 @@ vm_fault_soft_fast(struct faultstate *fs)
 	*/
 	vm_cnt.v_softfault++;
 	if (m->prefetched == 1) {
-		m->prefetched = 0; 
+		m->prefetched = 0;
+		update_pc_hits(fs->pc);
 		vm_cnt.v_cheri_softfault++;
 	}
 	// Cheri prefetching run for soft fault.

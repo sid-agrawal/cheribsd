@@ -183,6 +183,11 @@ struct pc_data {
 // overhead.
 static struct pc_data pc_data_cache[2048];
 static int curr_pc_data = 0;
+
+#define	PC_DATA_WLOCK(object)					\
+	rw_wlock(&(object)->lock)
+#define	PC_DATA_WUNLOCK(object)					\
+	rw_wunlock(&(object)->lock)
 /*
  * Return codes for internal fault routines.
  */
@@ -370,11 +375,11 @@ static struct pc_data * check_or_allocate_pc_data(uint64_t pc) {
 	if (curr_pc_data >= 2048) 
 		return NULL;
 
-	rw_wlock(pc_data_cache[curr_pc_data].lock);
+	PC_DATA_WLOCK(&pc_data_cache[curr_pc_data]);
 	pc_data_cache[curr_pc_data].pc = pc;
 	pc_data_cache[curr_pc_data].prev_prefetch_count = 0;
 	pc_data_cache[curr_pc_data].curr_window_count = 0;
-	rw_wunlock(pc_data_cache[curr_pc_data].lock);
+	PC_DATA_WUNLOCK(&pc_data_cache[curr_pc_data]);
 	curr_pc_data++;
 	return &pc_data_cache[curr_pc_data - 1];
 }
@@ -386,9 +391,9 @@ static bool update_pc_hits(uint64_t pc) {
 	
 	for (int i =0; i < curr_pc_data; i++) {
 		if (pc_data_cache[i].pc == pc) {
-			rw_wlock(pc_data_cache[i].lock);
-			pc_data_cache[i].hits++;
-			rw.wunlock(pc_data_cache[i].lock);
+			PC_DATA_WLOCK(&pc_data_cache[curr_pc_data]);
+			pc_data_cache[i].total_hits++;
+			PC_DATA_WUNLOCK(&pc_data_cache[curr_pc_data]);
 			return true; 
 		}
 	}
@@ -396,10 +401,10 @@ static bool update_pc_hits(uint64_t pc) {
 }
 
 // TODO(shaurp): Trigger this function.
-static print_pc_data_cache() {
+static void print_pc_data_cache() {
 	for(int i =0; i < curr_pc_data; i++) {
-		print("PC: %lx, hits: %lu\n", 
-				pc_data_cache[i].pc, pc_data_cache[i].hits);
+		printf("PC: %lx, hits: %lu\n", 
+				pc_data_cache[i].pc, pc_data_cache[i].total_hits);
 	}
 }
 
@@ -523,8 +528,7 @@ static int vm_cheri_readahead(struct faultstate *fs) {
 					++count;
 					p->prefetched = 1;
 					// Allocate or check per PC data.
-					struct pc_data *pc_data =
-						check_and_allocate_pc_data(fs->pc);
+					check_or_allocate_pc_data(fs->pc);
 					/* if (fs->vaddr + PAGE_SIZE == vaddr) 
 						fs->entry->next_read = vaddr 
 						+ PAGE_SIZE;

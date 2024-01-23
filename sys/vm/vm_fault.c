@@ -185,9 +185,9 @@ static struct pc_data pc_data_cache[2048];
 static int curr_pc_data = 0;
 
 #define	PC_DATA_WLOCK(object)					\
-	rw_wlock(&(object)->lock)
+	rw_wlock(&(object.lock))
 #define	PC_DATA_WUNLOCK(object)					\
-	rw_wunlock(&(object)->lock)
+	rw_wunlock(&(object.lock))
 /*
  * Return codes for internal fault routines.
  */
@@ -375,12 +375,12 @@ static struct pc_data * check_or_allocate_pc_data(uint64_t pc) {
 	if (curr_pc_data >= 2048) 
 		return NULL;
 	
-	rw_init(&(pc_data_cache[curr_pc_data])->lock, "pc_cache_lock");
-	PC_DATA_WLOCK(&pc_data_cache[curr_pc_data]);
+	rw_init(&(pc_data_cache[curr_pc_data].lock), "pc_cache_lock");
+	PC_DATA_WLOCK(pc_data_cache[curr_pc_data]);
 	pc_data_cache[curr_pc_data].pc = pc;
 	pc_data_cache[curr_pc_data].prev_prefetch_count = 0;
 	pc_data_cache[curr_pc_data].curr_window_count = 0;
-	PC_DATA_WUNLOCK(&pc_data_cache[curr_pc_data]);
+	PC_DATA_WUNLOCK(pc_data_cache[curr_pc_data]);
 	curr_pc_data++;
 	return &pc_data_cache[curr_pc_data - 1];
 }
@@ -400,10 +400,10 @@ static bool update_pc_hits(uint64_t pc) {
 	
 	for (int i =0; i < curr_pc_data; i++) {
 		if (pc_data_cache[i].pc == pc) {
-			PC_DATA_WLOCK(&pc_data_cache[curr_pc_data]);
+			PC_DATA_WLOCK(pc_data_cache[curr_pc_data]);
 			pc_data_cache[i].total_hits++;
 			print_pc_data_cache();
-			PC_DATA_WUNLOCK(&pc_data_cache[curr_pc_data]);
+			PC_DATA_WUNLOCK(pc_data_cache[curr_pc_data]);
 			return true; 
 		}
 	}

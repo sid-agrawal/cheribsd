@@ -372,6 +372,7 @@ vm_fault_dirty(struct faultstate *fs, vm_page_t m)
  */
 static struct pc_data * check_or_allocate_pc_data(uint64_t pc) {
 
+	// TODO(shaurp): Probably need to lock here?
 	for (int i =0; i < curr_pc_data; i++) {
 		if (pc_data_cache[i].pc == pc) {
 			pc_data_cache[i].prev_prefetch_count++;
@@ -411,10 +412,10 @@ static bool update_pc_hits(uint64_t pc) {
 	rw_wlock(&pc_data_lock);
 	for (int i =0; i < curr_pc_data; i++) {
 		if (pc_data_cache[i].pc == pc) {
-			printf("Data found\n");
+			// printf("Data found\n");
 			//PC_DATA_WLOCK(pc_data_cache[curr_pc_data]);
 			pc_data_cache[i].total_hits++;
-			print_pc_data_cache();
+			// print_pc_data_cache();
 			//PC_DATA_WUNLOCK(pc_data_cache[curr_pc_data]);
 			rw_wunlock(&pc_data_lock);
 			return true; 
@@ -667,12 +668,13 @@ vm_fault_soft_fast(struct faultstate *fs)
 		(*fs->m_hold) = m;
 		vm_page_wire(m);
 	}
+	// XXX(shaurp): Turned off prefaulting.
 	/* if (psind == 0 && !fs->wired)
 		vm_fault_prefault(fs, vaddr, PFBAK, PFFOR, true);
 	*/
 	vm_cnt.v_softfault++;
-	if (m->prefetched == 1) {
-		m->prefetched = 0;
+	if (m_map->prefetched == 1) {
+		m_map->prefetched = 0;
 		update_pc_hits(fs->pc);
 		vm_cnt.v_cheri_softfault++;
 	}

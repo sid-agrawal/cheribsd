@@ -202,6 +202,10 @@ enum fault_status {
 	FAULT_PROTECTION_FAILURE, /* Invalid access. */
 };
 
+void vm_pc_data_init() {
+	// Initialize the lock required for pc data.
+	rw_init(&pc_data_lock, "pc_data_lock");
+}
 void set_cheri_prefetch(int val) {
 	cheri_prefetch = val;
 }

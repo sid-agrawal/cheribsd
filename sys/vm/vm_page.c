@@ -1279,6 +1279,7 @@ vm_page_initfake(vm_page_t m, vm_paddr_t paddr, vm_memattr_t memattr)
 	m->busy_lock = VPB_CURTHREAD_EXCLUSIVE;
 	/* Fictitious pages are unevictable. */
 	m->ref_count = 1;
+	m->prefetched = 0;
 	pmap_page_init(m);
 memattr:
 	pmap_page_set_memattr(m, memattr);

@@ -395,8 +395,8 @@ static struct pc_data * check_or_allocate_pc_data(uint64_t pc) {
 }
 
 // TODO(shaurp): Trigger this function.
-static void print_pc_data_cache() {
-	for(int i =0; i < curr_pc_data; i++) {
+static void print_pc_data_cache(int pc_to_print) {
+	for(int i =pc_to_print; i < pc_to_print + 1; i++) {
 		printf("PC: %lx, prefetches: %lu, hits: %lu\n", 
 				pc_data_cache[i].pc, 
 				pc_data_cache[i].prev_prefetch_count,
@@ -415,7 +415,7 @@ static bool update_pc_hits(uint64_t pc) {
 			// printf("Data found\n");
 			//PC_DATA_WLOCK(pc_data_cache[curr_pc_data]);
 			pc_data_cache[i].total_hits++;
-			// print_pc_data_cache();
+			print_pc_data_cache(i);
 			//PC_DATA_WUNLOCK(pc_data_cache[curr_pc_data]);
 			rw_wunlock(&pc_data_lock);
 			return true; 

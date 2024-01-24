@@ -181,7 +181,7 @@ struct pc_data {
 
 // TODO(shaurp): Does it make sense to have this per CPU? To prevent locking 
 // overhead.
-static struct pc_data pc_data_cache[2048];
+static struct pc_data pc_data_cache[16];
 static int curr_pc_data = 0;
 struct rwlock pc_data_lock;
 #define	PC_DATA_WLOCK(object)					\
@@ -385,9 +385,9 @@ static struct pc_data * check_or_allocate_pc_data(uint64_t pc) {
 	pc_data_cache[curr_pc_data].prev_prefetch_count = 0;
 	pc_data_cache[curr_pc_data].curr_window_count = 0;
 	// PC_DATA_WUNLOCK(pc_data_cache[curr_pc_data]);
+	curr_pc_data++;
 	rw_wunlock(&pc_data_lock);
 	printf("Data initialized\n");
-	curr_pc_data++;
 	return &pc_data_cache[curr_pc_data - 1];
 }
 
@@ -405,7 +405,7 @@ static void print_pc_data_cache() {
 static bool update_pc_hits(uint64_t pc) {
 
 	printf("Updating PC hits\n");
-	rw_wlock(&pc_data_lock);
+	/*rw_wlock(&pc_data_lock);
 	for (int i =0; i < curr_pc_data; i++) {
 		if (pc_data_cache[i].pc == pc) {
 			printf("Data found\n");
@@ -418,7 +418,7 @@ static bool update_pc_hits(uint64_t pc) {
 			return true; 
 		}
 	}
-	rw_wunlock(&pc_data_lock);
+	rw_wunlock(&pc_data_lock);*/
 	return false;
 }
 

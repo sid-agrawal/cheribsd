@@ -242,6 +242,7 @@ struct vm_page {
 	vm_pindex_t pindex;		/* offset into object (O,P) */
 	vm_paddr_t phys_addr;		/* physical address of page (C) */
 	struct md_page md __subobject_use_container_bounds; 	/* machine dependent stuff */
+	// TODO(shaurp): Figure out how to use this field to check CP for pages.
 	u_int ref_count;		/* page references (A) */
 	u_int busy_lock;		/* busy owners lock (A) */
 	union vm_page_astate a;		/* state accessed atomically (A) */

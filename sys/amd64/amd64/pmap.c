@@ -2456,6 +2456,7 @@ pmap_init(void)
 		mpte->pindex = pmap_pde_pindex(KERNBASE) + i;
 		mpte->phys_addr = KPTphys + (i << PAGE_SHIFT);
 		mpte->ref_count = 1;
+		mpte->prefetched = 0;
 
 		/*
 		 * Collect the page table pages that were replaced by a 2MB

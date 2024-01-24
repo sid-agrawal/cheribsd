@@ -673,8 +673,8 @@ vm_fault_soft_fast(struct faultstate *fs)
 		vm_fault_prefault(fs, vaddr, PFBAK, PFFOR, true);
 	*/
 	vm_cnt.v_softfault++;
-	if (m_map->prefetched == 1) {
-		m_map->prefetched = 0;
+	if (m->prefetched == 1) {
+		m->prefetched = 0;
 		update_pc_hits(fs->pc);
 		vm_cnt.v_cheri_softfault++;
 	}

@@ -1742,6 +1742,7 @@ pmap_init(void)
 
 		m->pindex = pte1_idx;
 		m->phys_addr = pa;
+		m->prefetched = 0;
 		pte1_idx += NPT2_IN_PG;
 	}
 

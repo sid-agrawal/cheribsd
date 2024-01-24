@@ -1841,6 +1841,8 @@ vm_page_replace(vm_page_t mnew, vm_object_t object, vm_pindex_t pindex,
  *	      swap.
  *
  *	The objects must be locked.
+ *	TODO(shaurp): Do we need to worry about accounting prefetched in 
+ *	this function?
  */
 int
 vm_page_rename(vm_page_t m, vm_object_t new_object, vm_pindex_t new_pindex)

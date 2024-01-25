@@ -512,6 +512,7 @@ vm_page_init_page(vm_page_t m, vm_paddr_t pa, int segind)
 	m->pool = VM_FREEPOOL_DEFAULT;
 	m->valid = m->dirty = 0;
 	m->prefetched = 0;
+	m->pc = 0;
 	pmap_page_init(m);
 }
 
@@ -1280,6 +1281,7 @@ vm_page_initfake(vm_page_t m, vm_paddr_t paddr, vm_memattr_t memattr)
 	/* Fictitious pages are unevictable. */
 	m->ref_count = 1;
 	m->prefetched = 0;
+	m->pc = 0;
 	pmap_page_init(m);
 memattr:
 	pmap_page_set_memattr(m, memattr);

@@ -549,6 +549,7 @@ static int vm_cheri_readahead(struct faultstate *fs) {
 				if(result == VM_PAGER_OK) {
 					++count;
 					p->prefetched = 1;
+					p->pc = fs->pc;
 					// Allocate or check per PC data.
 					check_or_allocate_pc_data(fs->pc);
 					/* if (fs->vaddr + PAGE_SIZE == vaddr) 
@@ -678,7 +679,8 @@ vm_fault_soft_fast(struct faultstate *fs)
 	vm_cnt.v_softfault++;
 	if (m->prefetched == 1) {
 		m->prefetched = 0;
-		update_pc_hits(fs->pc);
+		update_pc_hits(m->pc);
+		m->pc = 0;	
 		vm_cnt.v_cheri_softfault++;
 	}
 	// Cheri prefetching run for soft fault.
@@ -1788,8 +1790,11 @@ vm_fault_object(struct faultstate *fs, int *behindp, int *aheadp)
 		if (vm_page_all_valid(fs->m)) {
 			// TODO(shaurp): Update per PC stats here.
 			vm_cnt.v_softfault++;
-			if (fs->m->prefetched == 1)
-				vm_cnt.v_cheri_softfault++;	
+			if (fs->m->prefetched == 1) {
+				update_pc_hits(fs->m->pc);
+				fs->m->pc = 0;
+				vm_cnt.v_cheri_softfault++;
+			}
 			fs->m->prefetched = 0;
 			uint64_t cycle2 = get_cyclecount();
 			num_pagefaults++; 

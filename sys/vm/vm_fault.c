@@ -536,7 +536,7 @@ static int vm_cheri_readahead(struct faultstate *fs) {
 				p = vm_page_alloc(obj, pindex,
 					VM_ALLOC_NORMAL);
 			
-				if(p == NULL) 
+				if(p == NULL)
 					break;
 
 				p->oflags |= VPO_SWAPINPROG;
@@ -676,13 +676,17 @@ vm_fault_soft_fast(struct faultstate *fs)
 	/* if (psind == 0 && !fs->wired)
 		vm_fault_prefault(fs, vaddr, PFBAK, PFFOR, true);
 	*/
-	vm_cnt.v_softfault++;
+	if (m->prefetched == 2) {
+		vm_cnt.v_softfault++;
+		m->prefetched = 0;
+	}
 	if (m->prefetched == 1) {
 		m->prefetched = 0;
 		update_pc_hits(m->pc);
 		m->pc = 0;	
 		vm_cnt.v_cheri_softfault++;
 	}
+
 	// Cheri prefetching run for soft fault.
 	// The reason this might not be working is fs->m is NULL.
 	//if (vm_cnt.v_cheri_prefetch == 1)
@@ -1789,7 +1793,10 @@ vm_fault_object(struct faultstate *fs, int *behindp, int *aheadp)
 		 */
 		if (vm_page_all_valid(fs->m)) {
 			// TODO(shaurp): Update per PC stats here.
-			vm_cnt.v_softfault++;
+			if (fs->m->prefetched == 2) {
+				vm_cnt.v_softfault++;
+				fs->m->prefetched = 0;	
+			}
 			if (fs->m->prefetched == 1) {
 				update_pc_hits(fs->m->pc);
 				fs->m->pc = 0;

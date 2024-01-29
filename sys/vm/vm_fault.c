@@ -606,6 +606,7 @@ static int vm_cheri_readahead(struct faultstate *fs) {
 static enum fault_status
 vm_fault_soft_fast(struct faultstate *fs)
 {
+	uint64_t cycle1 = get_cyclecount();
 	vm_page_t m, m_map;
 #if VM_NRESERVLEVEL > 0
 	vm_page_t m_super;
@@ -677,10 +678,14 @@ vm_fault_soft_fast(struct faultstate *fs)
 		vm_fault_prefault(fs, vaddr, PFBAK, PFFOR, true);
 	*/
 	if (m->prefetched == 2) {
+		uint64_t cycle2 = get_cyclecount();
+		printf("Softfault latency: %lu\n", cycle2 - cycle1);
 		vm_cnt.v_softfault++;
 		m->prefetched = 0;
 	}
 	if (m->prefetched == 1) {
+		uint64_t cycle2 = get_cyclecount();
+		printf("Softfault latency: %lu\n", cycle2 - cycle1);
 		m->prefetched = 0;
 		update_pc_hits(m->pc);
 		m->pc = 0;	
@@ -1572,6 +1577,7 @@ vm_fault_allocate(struct faultstate *fs)
 static enum fault_status
 vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
 {
+	uint64_t cycle1 = get_cyclecount();
 	vm_offset_t e_end; 
 	vm_offset_t e_start;
 	int cluster_offset;
@@ -1685,6 +1691,12 @@ vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
 		unsigned long long elapsed = (end.tv_sec - start.tv_sec) * (10000000) + (end.tv_nsec - start.tv_nsec);
 		elapsed++;
 	}
+	if (rv == VM_PAGER_OK && fs->m->prefetched == 2) {
+	
+		uint64_t cycle2 = get_cyclecount();
+		printf("Hardfault latency: %lu\n", cycle2 - cycle1);
+	}
+
 	if (rv == VM_PAGER_OK)
 		return (FAULT_HARD);
 	if (rv == VM_PAGER_ERROR)
@@ -1804,6 +1816,7 @@ vm_fault_object(struct faultstate *fs, int *behindp, int *aheadp)
 			}
 			fs->m->prefetched = 0;
 			uint64_t cycle2 = get_cyclecount();
+			printf("Softfault latency: %lu\n", cycle2 - cycle1);
 			num_pagefaults++; 
 			vm_cnt.v_pagefault_latency = (vm_cnt.v_pagefault_latency * 
 					(num_pagefaults - 1) + (cycle2 - cycle1)) 
@@ -1916,11 +1929,6 @@ RetryFault:
 	    (fs.fault_flags & (VM_FAULT_WIRE | VM_FAULT_DIRTY)) == 0) {
 		VM_OBJECT_RLOCK(fs.first_object);
 		res = vm_fault_soft_fast(&fs);
-		if (res == FAULT_SUCCESS) {
-			
-			uint64_t cycle2 = get_cyclecount();
-			printf("Softfault latency: %lu\n", cycle2 - cycle1);
-		}
 		if (res == FAULT_SUCCESS)
 			return (KERN_SUCCESS);
 		if (!VM_OBJECT_TRYUPGRADE(fs.first_object)) {
@@ -2124,8 +2132,6 @@ found:
 	 */
 	fault_deallocate(&fs);
 	if (hardfault) {
-		uint64_t cycle2 = get_cyclecount();
-		printf("Hardfault latency: %lu\n", cycle2 - cycle1);
 		VM_CNT_INC(v_io_faults);
 		curthread->td_ru.ru_majflt++;
 #ifdef RACCT

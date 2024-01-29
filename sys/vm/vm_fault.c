@@ -1870,6 +1870,7 @@ vm_fault(vm_map_t map, uint64_t pc, vm_offset_t actual_vaddr, vm_offset_t vaddr,
 	enum fault_status res;
 	bool hardfault;
 
+	uint64_t cycle1 = get_cyclecount();
 	VM_CNT_INC(v_vm_faults);
 
 	if ((curthread->td_pflags & TDP_NOFAULTING) != 0)
@@ -1915,6 +1916,11 @@ RetryFault:
 	    (fs.fault_flags & (VM_FAULT_WIRE | VM_FAULT_DIRTY)) == 0) {
 		VM_OBJECT_RLOCK(fs.first_object);
 		res = vm_fault_soft_fast(&fs);
+		if (res == FAULT_SUCCESS) {
+			
+			uint64_t cycle2 = get_cyclecount();
+			printf("Softfault latency: %lu\n", cycle2 - cycle1);
+		}
 		if (res == FAULT_SUCCESS)
 			return (KERN_SUCCESS);
 		if (!VM_OBJECT_TRYUPGRADE(fs.first_object)) {
@@ -2109,11 +2115,17 @@ found:
 	vm_page_xunbusy(fs.m);
 	fs.m = NULL;
 
+	if (!hardfault) {
+		uint64_t cycle2 = get_cyclecount();
+		printf("Softfault latency: %lu\n", cycle2 - cycle1);
+	}
 	/*
 	 * Unlock everything, and return
 	 */
 	fault_deallocate(&fs);
 	if (hardfault) {
+		uint64_t cycle2 = get_cyclecount();
+		printf("Hardfault latency: %lu\n", cycle2 - cycle1);
 		VM_CNT_INC(v_io_faults);
 		curthread->td_ru.ru_majflt++;
 #ifdef RACCT

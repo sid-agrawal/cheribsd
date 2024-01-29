@@ -1809,7 +1809,7 @@ vm_fault_object(struct faultstate *fs, int *behindp, int *aheadp)
 				vm_cnt.v_softfault++;
 				fs->m->prefetched = 0;	
 				uint64_t cycle2 = get_cyclecount();
-				printf("Softfault latency: %lu\n", cycle2 - cycle1);
+				// printf("Softfault latency: %lu\n", cycle2 - cycle1);
 			
 			}
 			if (fs->m->prefetched == 1) {
@@ -1817,7 +1817,7 @@ vm_fault_object(struct faultstate *fs, int *behindp, int *aheadp)
 				fs->m->pc = 0;
 				vm_cnt.v_cheri_softfault++;
 				uint64_t cycle2 = get_cyclecount();
-				printf("Softfault latency: %lu\n", cycle2 - cycle1);
+				printf("Softfault CP latency: %lu\n", cycle2 - cycle1);
 			
 			}
 			fs->m->prefetched = 0;

@@ -1809,7 +1809,7 @@ vm_fault_object(struct faultstate *fs, int *behindp, int *aheadp)
 				vm_cnt.v_softfault++;
 				fs->m->prefetched = 0;	
 				uint64_t cycle2 = get_cyclecount();
-				// printf("Softfault latency: %lu\n", cycle2 - cycle1);
+				printf("Softfault latency: %lu\n", cycle2 - cycle1);
 			
 			}
 			if (fs->m->prefetched == 1) {
@@ -2127,10 +2127,6 @@ found:
 	vm_page_xunbusy(fs.m);
 	fs.m = NULL;
 
-	if (!hardfault) {
-		uint64_t cycle2 = get_cyclecount();
-		printf("Softfault latency: %lu\n", cycle2 - cycle1);
-	}
 	/*
 	 * Unlock everything, and return
 	 */

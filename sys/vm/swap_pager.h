@@ -73,7 +73,7 @@ struct swdevt {
 
 extern int swap_pager_avail;
 extern int nsw_cluster_max;
-int deactivated_pages;
+extern int deactivated_pages;
 struct xswdev;
 int swap_dev_info(int name, struct xswdev *xs, char *devname, size_t len);
 void swap_pager_copy(vm_object_t, vm_object_t, vm_pindex_t, int);

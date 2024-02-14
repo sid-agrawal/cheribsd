@@ -180,6 +180,7 @@ static void
 vm_swapout_object_deactivate_page(pmap_t pmap, vm_page_t m, bool unmap)
 {
 
+	printf("Swapout deactivate page\n");
 	/*
 	 * Ignore unreclaimable wired pages.  Repeat the check after busying
 	 * since a busy holder may wire the page.
@@ -219,6 +220,7 @@ vm_swapout_object_deactivate(pmap_t pmap, vm_object_t first_object,
 	vm_page_t m;
 	bool unmap;
 
+	printf("Calling object deactivate\n");
 	VM_OBJECT_ASSERT_LOCKED(first_object);
 	if ((first_object->flags & OBJ_FICTITIOUS) != 0)
 		return;

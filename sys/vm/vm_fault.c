@@ -679,13 +679,15 @@ vm_fault_soft_fast(struct faultstate *fs)
 	*/
 	if (m->prefetched == 2) {
 		uint64_t cycle2 = get_cyclecount();
-		printf("Softfault fast latency: %lu\n", cycle2 - cycle1);
+		// printf("Softfault fast latency: %lu\n", cycle2 - cycle1);
+		vm_cnt.v_pagefault_latency = cycle2 - cycle1;
 		vm_cnt.v_softfault++;
 		m->prefetched = 0;
 	}
 	if (m->prefetched == 1) {
 		uint64_t cycle2 = get_cyclecount();
-		printf("Softfault fast latency: %lu\n", cycle2 - cycle1);
+		vm_cnt.v_pagefault_latency = cycle2 - cycle1;
+		// printf("Softfault fast latency: %lu\n", cycle2 - cycle1);
 		m->prefetched = 0;
 		update_pc_hits(m->pc);
 		m->pc = 0;	
@@ -1694,7 +1696,8 @@ vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
 	if (rv == VM_PAGER_OK && fs->m->prefetched == 2) {
 	
 		uint64_t cycle2 = get_cyclecount();
-		printf("Hardfault latency: %lu\n", cycle2 - cycle1);
+		vm_cnt.v_pagefault_latency = cycle2 - cycle1;
+		// printf("Hardfault latency: %lu\n", cycle2 - cycle1);
 	}
 
 	if (rv == VM_PAGER_OK)
@@ -1804,20 +1807,21 @@ vm_fault_object(struct faultstate *fs, int *behindp, int *aheadp)
 		 * done.
 		 */
 		if (vm_page_all_valid(fs->m)) {
+			uint64_t cycle2 = get_cyclecount();
 			// TODO(shaurp): Update per PC stats here.
 			if (fs->m->prefetched == 2) {
 				vm_cnt.v_softfault++;
 				fs->m->prefetched = 0;	
-				uint64_t cycle2 = get_cyclecount();
-				printf("Softfault latency: %lu\n", cycle2 - cycle1);
+				vm_cnt.v_pagefault_latency = cycle2 - cycle1;
+				// printf("Softfault latency: %lu\n", cycle2 - cycle1);
 			
 			}
 			if (fs->m->prefetched == 1) {
 				update_pc_hits(fs->m->pc);
 				fs->m->pc = 0;
 				vm_cnt.v_cheri_softfault++;
-				uint64_t cycle2 = get_cyclecount();
-				printf("Softfault CP latency: %lu\n", cycle2 - cycle1);
+				vm_cnt.v_pagefault_latency = cycle2 - cycle1;
+				// printf("Softfault CP latency: %lu\n", cycle2 - cycle1);
 			
 			}
 			fs->m->prefetched = 0;
@@ -1887,7 +1891,7 @@ vm_fault(vm_map_t map, uint64_t pc, vm_offset_t actual_vaddr, vm_offset_t vaddr,
 	enum fault_status res;
 	bool hardfault;
 
-	uint64_t cycle1 = get_cyclecount();
+	// uint64_t cycle1 = get_cyclecount();
 	VM_CNT_INC(v_vm_faults);
 
 	if ((curthread->td_pflags & TDP_NOFAULTING) != 0)

@@ -384,6 +384,7 @@ vm_daemon(void)
 		vm_daemon_timeout = hz;
 #endif
 
+	printf("Running vm daemon\n");
 	while (TRUE) {
 		mtx_lock(&vm_daemon_mtx);
 		msleep(&vm_daemon_needed, &vm_daemon_mtx, PPAUSE, "psleep",
@@ -450,7 +451,7 @@ again:
 			lim_rlimit_proc(p, RLIMIT_RSS, &rsslim);
 			limit = OFF_TO_IDX(
 			    qmin(rsslim.rlim_cur, rsslim.rlim_max));
-
+			printf("Checking limit %lu\n", limit);
 			/*
 			 * let processes that are swapped out really be
 			 * swapped out set the limit to nothing (will force a
@@ -468,7 +469,9 @@ again:
 			sx_sunlock(&allproc_lock);
 
 			size = vmspace_resident_count(vm);
+			printf("PID: %d,  RSS: %lu\n", p->p_pid, size);
 			if (size >= limit) {
+				printf("Deactivating pages\n");
 				vm_swapout_map_deactivate_pages(
 				    &vm->vm_map, limit);
 				size = vmspace_resident_count(vm);

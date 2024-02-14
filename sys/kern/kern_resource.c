@@ -704,7 +704,7 @@ kern_proc_setrlimit(struct thread *td, struct proc *p, u_int which,
 		limp->rlim_cur = limp->rlim_max;
 	lim_copy(newlim, oldlim);
 	alimp = &newlim->pl_rlimit[which];
-
+	printf("PID: %d, LIMIT:%d, VALUE: %lu\n",p->p_pid, which, limp->rlim_cur); 
 	switch (which) {
 	case RLIMIT_CPU:
 		if (limp->rlim_cur != RLIM_INFINITY &&

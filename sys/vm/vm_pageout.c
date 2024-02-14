@@ -2175,6 +2175,7 @@ vm_pageout_worker(void *arg)
 					deactivated_pages);
 			vm_pageout_inactive(vmd, deactivated_pages, 
 					&addl_shortage);
+			deactivated_pages = 0;
 		}
 		// TODO(shaurp): Don't scan active unless necessary.
 		// Could a simple way be to move entire inactive queue to 

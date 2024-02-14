@@ -118,7 +118,7 @@ __FBSDID("$FreeBSD$");
 /* the kernel process "vm_daemon" */
 static void vm_daemon(void);
 static struct proc *vmproc;
-
+int deactivated_pages = 0;
 static struct kproc_desc vm_kp = {
 	"vmdaemon",
 	vm_daemon,
@@ -381,7 +381,7 @@ vm_daemon(void)
 	struct thread *td;
 	struct vmspace *vm;
 	int breakout, swapout_flags, tryagain, attempts;
-	int intial_size;
+	unsigned long initial_size;
 #ifdef RACCT
 	uint64_t rsize, ravailable;
 
@@ -481,8 +481,8 @@ again:
 				    &vm->vm_map, limit);
 				size = vmspace_resident_count(vm);
 				
-				printf("Deactivated pages %d\n", 
-						intial_size - size);
+				printf("Deactivated pages %lu\n", 
+						initial_size - size);
 				deactivated_pages = initial_size - size;	
 			}
 #ifdef RACCT

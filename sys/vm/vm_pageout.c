@@ -1635,6 +1635,7 @@ reinsert:
 	 * Record the remaining shortage and the progress and rate it was made.
 	 */
 	atomic_add_int(&vmd->vmd_addl_shortage, addl_page_shortage);
+	// TODO(shaurp): Here is how to do time measurement.
 	getmicrouptime(&end);
 	timevalsub(&end, &start);
 	atomic_add_int(&vmd->vmd_inactive_us,

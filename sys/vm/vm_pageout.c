@@ -2150,6 +2150,9 @@ vm_pageout_worker(void *arg)
 		/* Prevent spurious wakeups by ensuring that wanted is set. */
 		atomic_store_int(&vmd->vmd_pageout_wanted, 1);
 
+		// TODO(shaurp): Here we can test for how many to actually
+		// free by using limits rather than the shortage.
+		// Shortage will never report a shortage in the real sense.
 		/*
 		 * Use the controller to calculate how many pages to free in
 		 * this interval, and scan the inactive queue.  If the lowmem
@@ -2166,6 +2169,16 @@ vm_pageout_worker(void *arg)
 			    &addl_shortage);
 		} else
 			addl_shortage = 0;
+
+		if (deactivated_pages > 0) {
+			printf("Moving pages from inactive %d\n", 
+					deactivated_pages);
+			vm_pageout_inactive(vmd, deactivated_pages, 
+					&addl_shortage);
+		}
+		// TODO(shaurp): Don't scan active unless necessary.
+		// Could a simple way be to move entire inactive queue to 
+		// laundry?
 
 		/*
 		 * Scan the active queue.  A positive value for shortage

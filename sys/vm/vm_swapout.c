@@ -192,10 +192,13 @@ vm_swapout_object_deactivate_page(pmap_t pmap, vm_page_t m, bool unmap)
 		return;
 	}
 	if (!pmap_is_referenced(m)) {
-		if (!vm_page_active(m))
+		if (!vm_page_active(m)) {
 			(void)vm_page_try_remove_all(m);
-		else if (unmap && vm_page_try_remove_all(m))
+			printf("Unmapping page\n");
+		} else if (unmap && vm_page_try_remove_all(m)) {
+			printf("Deactivating page\n");
 			vm_page_deactivate(m);
+		}
 	}
 	vm_page_xunbusy(m);
 }
@@ -227,6 +230,7 @@ vm_swapout_object_deactivate(pmap_t pmap, vm_object_t first_object,
 		    blockcount_read(&object->paging_in_progress) > 0)
 			goto unlock_return;
 
+		// TODO(shaurp): Do we want to do this?
 		unmap = true;
 		if (object->shadow_count > 1)
 			unmap = false;
@@ -377,6 +381,7 @@ vm_daemon(void)
 	struct thread *td;
 	struct vmspace *vm;
 	int breakout, swapout_flags, tryagain, attempts;
+	int intial_size;
 #ifdef RACCT
 	uint64_t rsize, ravailable;
 
@@ -469,12 +474,16 @@ again:
 			sx_sunlock(&allproc_lock);
 
 			size = vmspace_resident_count(vm);
+			initial_size = size;
 			printf("PID: %d,  RSS: %lu\n", p->p_pid, size);
 			if (size >= limit) {
-				printf("Deactivating pages\n");
 				vm_swapout_map_deactivate_pages(
 				    &vm->vm_map, limit);
 				size = vmspace_resident_count(vm);
+				
+				printf("Deactivated pages %d\n", 
+						intial_size - size);
+				deactivated_pages = initial_size - size;	
 			}
 #ifdef RACCT
 			if (racct_enable) {

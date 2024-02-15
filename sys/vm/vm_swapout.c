@@ -243,8 +243,7 @@ vm_swapout_object_deactivate(pmap_t pmap, vm_object_t first_object,
 		 * Scan the object's entire memory queue.
 		 */
 		TAILQ_FOREACH(m, &object->memq, listq) {
-			printf("Looking inside the object count %lu, desired 
-					%lu\n", pmap_resident_count(pmap), desired);
+			printf("Looking inside the object count %lu, desired %lu\n", pmap_resident_count(pmap), desired);
 			if (pmap_resident_count(pmap) <= desired)
 				goto unlock_return;
 			if (should_yield())

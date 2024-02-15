@@ -201,6 +201,7 @@ vm_swapout_object_deactivate_page(pmap_t pmap, vm_page_t m, bool unmap)
 			vm_page_deactivate(m);
 		}
 	}
+	printf("Page was referenced?\n");
 	vm_page_xunbusy(m);
 }
 
@@ -232,6 +233,7 @@ vm_swapout_object_deactivate(pmap_t pmap, vm_object_t first_object,
 		    blockcount_read(&object->paging_in_progress) > 0)
 			goto unlock_return;
 
+		printf("Obtained object for swapping\n");
 		// TODO(shaurp): Do we want to do this?
 		unmap = true;
 		if (object->shadow_count > 1)
@@ -241,6 +243,7 @@ vm_swapout_object_deactivate(pmap_t pmap, vm_object_t first_object,
 		 * Scan the object's entire memory queue.
 		 */
 		TAILQ_FOREACH(m, &object->memq, listq) {
+			printf("Looking inside the object\n");
 			if (pmap_resident_count(pmap) <= desired)
 				goto unlock_return;
 			if (should_yield())

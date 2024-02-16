@@ -1931,6 +1931,7 @@ vm_page_alloc_domain(vm_object_t object, vm_pindex_t pindex, int domain,
  * optimize insertion of the page into the object, the caller must also specifiy
  * the resident page in the object with largest index smaller than the given
  * page index, or NULL if no such page exists.
+ * TODO(shaurp): Check for limit and wait until the actual size is obtained?
  */
 vm_page_t
 vm_page_alloc_after(vm_object_t object, vm_pindex_t pindex,

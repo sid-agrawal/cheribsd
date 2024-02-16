@@ -191,7 +191,7 @@ vm_swapout_object_deactivate_page(pmap_t pmap, vm_page_t m, bool unmap)
 		vm_page_xunbusy(m);
 		return;
 	}
-	if (!pmap_is_referenced(m)) {
+	// if (!pmap_is_referenced(m)) {
 		if (!vm_page_active(m)) {
 			(void)vm_page_try_remove_all(m);
 			printf("Unmapping page\n");
@@ -201,7 +201,7 @@ vm_swapout_object_deactivate_page(pmap_t pmap, vm_page_t m, bool unmap)
 			vm_page_deactivate(m);
 			deactivated_pages++;
 		}
-	}
+	// }
 	vm_page_xunbusy(m);
 }
 

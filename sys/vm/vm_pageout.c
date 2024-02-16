@@ -1686,7 +1686,8 @@ vm_pageout_inactive_dispatch(struct vm_domain *vmd, int shortage)
 	}
 
 	/* Run the local thread scan. */
-	vm_pageout_scan_inactive(vmd, vmd->vmd_inactive_shortage + slop);
+	vm_pageout_scan_inactive(vmd, deactivated_pages > 0 ? deactivated_pages 
+			: vmd->vmd_inactive_shortage + slop);
 
 	/*
 	 * Block until helper threads report results and then accumulate

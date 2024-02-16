@@ -1615,8 +1615,10 @@ free_page:
 			page_shortage--;
 			continue;
 		}
-		if ((object->flags & OBJ_DEAD) == 0)
+		if ((object->flags & OBJ_DEAD) == 0) {
+			printf("Laundering page\n");
 			vm_page_launder(m);
+		}
 skip_page:
 		vm_page_xunbusy(m);
 		continue;
@@ -2170,7 +2172,6 @@ vm_pageout_worker(void *arg)
 		} else
 			addl_shortage = 0;
 
-		printf("Checking deactivated_pages %d\n", deactivated_pages);
 		if (deactivated_pages > 0) {
 			printf("Moving pages from inactive %d\n", 
 					deactivated_pages);

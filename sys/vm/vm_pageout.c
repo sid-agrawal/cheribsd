@@ -2170,6 +2170,7 @@ vm_pageout_worker(void *arg)
 		} else
 			addl_shortage = 0;
 
+		printf("Checking deactivated_pages %d\n", deactivated_pages);
 		if (deactivated_pages > 0) {
 			printf("Moving pages from inactive %d\n", 
 					deactivated_pages);

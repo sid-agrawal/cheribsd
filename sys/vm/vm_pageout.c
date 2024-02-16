@@ -1023,6 +1023,12 @@ vm_pageout_laundry_worker(void *arg)
 		 * First determine whether we need to launder pages to meet a
 		 * shortage of free pages.
 		 */
+		if (deactivated_pages > 0) {
+			launder = deactivated_pages;
+			target = deactivated_pages;
+			goto dolaundry;
+		}
+
 		if (shortfall > 0) {
 			in_shortfall = true;
 			shortfall_cycle = VM_LAUNDER_RATE / VM_INACT_SCAN_RATE;
@@ -1042,6 +1048,7 @@ vm_pageout_laundry_worker(void *arg)
 			goto trybackground;
 		}
 		launder = target / shortfall_cycle--;
+
 		goto dolaundry;
 
 		/*
@@ -1100,8 +1107,12 @@ dolaundry:
 			 * pages could exceed "target" by the maximum size of
 			 * a cluster minus one. 
 			 */
+			printf("Laundering %d pages\n", launder);
 			target -= min(vm_pageout_launder(vmd, launder,
 			    in_shortfall), target);
+			deactivated_pages -= target;
+			if (deactivated_pages < 0) 
+				deactivated_pages = 0;
 			pause("laundp", hz / VM_LAUNDER_RATE);
 		}
 
@@ -2177,7 +2188,6 @@ vm_pageout_worker(void *arg)
 					deactivated_pages);
 			vm_pageout_inactive(vmd, deactivated_pages, 
 					&addl_shortage);
-			deactivated_pages = 0;
 		}
 		// TODO(shaurp): Don't scan active unless necessary.
 		// Could a simple way be to move entire inactive queue to 

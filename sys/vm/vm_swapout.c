@@ -194,10 +194,10 @@ vm_swapout_object_deactivate_page(pmap_t pmap, vm_page_t m, bool unmap)
 	// if (!pmap_is_referenced(m)) {
 		if (!vm_page_active(m)) {
 			(void)vm_page_try_remove_all(m);
-			printf("Unmapping page\n");
+			// printf("Unmapping page\n");
 			deactivated_pages++;
 		} else if (unmap && vm_page_try_remove_all(m)) {
-			printf("Deactivating page\n");
+			// printf("Deactivating page\n");
 			vm_page_deactivate(m);
 			deactivated_pages++;
 		}
@@ -460,7 +460,11 @@ again:
 			lim_rlimit_proc(p, RLIMIT_RSS, &rsslim);
 			limit = OFF_TO_IDX(
 			    qmin(rsslim.rlim_cur, rsslim.rlim_max));
+<<<<<<< HEAD
 
+=======
+			// printf("Checking limit %lu\n", limit);
+>>>>>>> bcd28f15b25 (removing prints)
 			/*
 			 * let processes that are swapped out really be
 			 * swapped out set the limit to nothing (will force a
@@ -479,13 +483,14 @@ again:
 
 			size = vmspace_resident_count(vm);
 			initial_size = size;
+			// printf("PID: %d,  RSS: %lu\n", p->p_pid, size);
 			if (size >= limit) {
 				vm_swapout_map_deactivate_pages(
 				    &vm->vm_map, limit);
 				size = vmspace_resident_count(vm);
 				
-				printf("Deactivated pages %lu\n", 
-						initial_size - size);
+				// printf("Deactivated pages %lu\n", 
+				//		initial_size - size);
 			}
 #ifdef RACCT
 			if (racct_enable) {

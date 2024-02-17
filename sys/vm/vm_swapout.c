@@ -386,7 +386,7 @@ vm_daemon(void)
 	struct thread *td;
 	struct vmspace *vm;
 	int breakout, swapout_flags, tryagain, attempts;
-	unsigned long initial_size;
+	// unsigned long initial_size;
 #ifdef RACCT
 	uint64_t rsize, ravailable;
 
@@ -479,7 +479,7 @@ again:
 			sx_sunlock(&allproc_lock);
 
 			size = vmspace_resident_count(vm);
-			initial_size = size;
+			// initial_size = size;
 			// printf("PID: %d,  RSS: %lu\n", p->p_pid, size);
 			if (size >= limit) {
 				vm_swapout_map_deactivate_pages(

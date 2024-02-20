@@ -2041,7 +2041,9 @@ again:
 		goto found;
 	}
 #endif
-	if (curproc != NULL) { 
+	PROC_LOCK(curproc);
+	if (!(curproc->p_state != PRS_NORMAL ||
+			curproc->p_flag & (P_INEXEC | P_SYSTEM | P_WEXIT))) { 
 		vm_pindex_t limit, size;
 		struct rlimit rsslim;
 		lim_rlimit_proc(curproc, RLIMIT_RSS, &rsslim);
@@ -2053,9 +2055,12 @@ again:
 
 			if (size > limit) {
 				printf("Size exceeded pid: %d, limit %lu\n", curproc->p_pid, limit); 
+				PROC_UNLOCK(curproc);
+				return NULL;
 			}
 		}
 	}
+	PROC_UNLOCK(curproc);
 	
 	vmd = VM_DOMAIN(domain);
 	if (vmd->vmd_pgcache[VM_FREEPOOL_DEFAULT].zone != NULL) {

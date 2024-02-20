@@ -2060,7 +2060,8 @@ again:
 			size = vmspace_resident_count(curproc->p_vmspace);
 
 			if (size > limit) {
-				printf("Size exceeded pid: %d, limit %lu\n", curproc->p_pid, limit); 
+				printf("Size exceeded pid: %d, size %lu, limit 
+						%lu\n", curproc->p_pid, size, limit); 
 				PROC_UNLOCK(curproc);
 				return NULL;
 			}

@@ -2040,6 +2040,23 @@ again:
 		goto found;
 	}
 #endif
+	// TODO(shaurp): Here check if we are already above the limit.
+	// If we are, then return NULL and make the process retry or give up.
+	// In case of pagefault it will retry, in case of prefetch we have to 
+	// decide.
+	// Look at curproc here.
+
+	vm_pindex_t limit;	
+	lim_rlimit_proc(curproc, RLIMIT_RSS, &rsslim);
+	limit = OFF_TO_IDX(
+		qmin(rsslim.rlim_cur, rsslim.rlim_max));
+
+	size = vmspace_resident_count(curproc->p_vmspace);
+
+	if (size > limit) {
+		printf("Size exceeded for proc %d, try again\n", curproc->p_pid);
+	}
+
 	vmd = VM_DOMAIN(domain);
 	if (vmd->vmd_pgcache[VM_FREEPOOL_DEFAULT].zone != NULL) {
 		m = uma_zalloc(vmd->vmd_pgcache[VM_FREEPOOL_DEFAULT].zone,

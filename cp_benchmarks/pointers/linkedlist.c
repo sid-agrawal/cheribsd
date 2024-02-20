@@ -6,6 +6,9 @@
 #include <sys/time.h>
 #include <sys/resource.h>
 #include <sys/sysctl.h>
+#include <sys/types.h>
+#include <sys/time.h>
+#include <sys/resource.h>
 
 //#include "stats.h"
 #include "shuffle.h"
@@ -25,9 +28,21 @@ int main(int argc,char* argv[])
 
         /* Get num_nodes */
         int num_nodes = atoi(argv[1]); 
-        num_nodes = 1UL << num_nodes;
+       
+	/* Set RSS limit to wss/2 */
+	struct rlimit *constrain_memory = (struct rlimit *) malloc(sizeof(struct rlimit));
+    	constrain_memory->rlim_cur = (1UL << (num_nodes - 1)) * sizeof(struct node);
+    	constrain_memory->rlim_max = (1UL << (num_nodes - 1)) * sizeof(struct node);
+   	setrlimit(RLIMIT_RSS, constrain_memory);
 
-        /* Get cyclesPerNode */
+	if (constrain_memory->rlim_cur == 0)
+		return 0; 
+
+	/* Set total memory consumption */
+	num_nodes = 1UL << num_nodes;
+	
+        
+	/* Get cyclesPerNode */
         int cyclesPerNode = atoi(argv[2]); 
     
 	int randomize_traversal = atoi(argv[3]);

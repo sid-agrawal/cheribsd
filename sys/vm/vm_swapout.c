@@ -225,7 +225,8 @@ vm_swapout_object_deactivate(pmap_t pmap, vm_object_t first_object,
 	if ((first_object->flags & OBJ_FICTITIOUS) != 0)
 		return;
 	for (object = first_object;; object = backing_object) {
-		if (pmap_resident_count(pmap) <= desired)
+		// XXX: 1000 is a grace factor which should be percent based.
+		if (pmap_resident_count(pmap) < desired - 1000)
 			goto unlock_return;
 		VM_OBJECT_ASSERT_LOCKED(object);
 		if ((object->flags & OBJ_UNMANAGED) != 0 ||
@@ -242,7 +243,9 @@ vm_swapout_object_deactivate(pmap_t pmap, vm_object_t first_object,
 		 * Scan the object's entire memory queue.
 		 */
 		TAILQ_FOREACH(m, &object->memq, listq) {
-			if (pmap_resident_count(pmap) < desired)
+
+		// XXX: 1000 is a grace factor which should be percent based.
+			if (pmap_resident_count(pmap) < desired - 1000)
 				goto unlock_return;
 			vm_swapout_object_deactivate_page(pmap, m, unmap);
 			/* if (should_yield())

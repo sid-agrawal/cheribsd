@@ -2049,7 +2049,7 @@ again:
 	
 	PROC_LOCK(curproc);
 	if (!(curproc->p_state != PRS_NORMAL ||
-			curproc->p_flag & (P_INEXEC | P_SYSTEM | P_WEXIT))) { 
+			curproc->p_flag & (P_INEXEC | P_SYSTEM | P_WEXIT))) {
 		vm_pindex_t limit, size;
 		struct rlimit rsslim;
 		lim_rlimit_proc(curproc, RLIMIT_RSS, &rsslim);
@@ -2060,8 +2060,8 @@ again:
 			size = vmspace_resident_count(curproc->p_vmspace);
 
 			if (size > limit) {
-				printf("Size exceeded pid: %d, size %lu, limit 
-						%lu\n", curproc->p_pid, size, limit); 
+				printf("Size exceeded pid: %d, size %lu, limit %lu\n"
+						, curproc->p_pid, size, limit); 
 				PROC_UNLOCK(curproc);
 				return NULL;
 			}

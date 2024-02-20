@@ -2041,6 +2041,12 @@ again:
 		goto found;
 	}
 #endif
+	// In case of pagefault it will retry, in case of prefetch we have to 
+	// decide.
+	// Look at curproc here.
+	// TODO(shaurp): Should we lock the proc here?
+	// TODO(shaurp): Do we need to use vmspace acquire ref here?
+	
 	PROC_LOCK(curproc);
 	if (!(curproc->p_state != PRS_NORMAL ||
 			curproc->p_flag & (P_INEXEC | P_SYSTEM | P_WEXIT))) { 

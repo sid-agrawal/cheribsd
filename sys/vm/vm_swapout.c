@@ -187,10 +187,10 @@ vm_swapout_object_deactivate_page(pmap_t pmap, vm_page_t m, bool unmap)
 	if (vm_page_wired(m) || !vm_page_tryxbusy(m))
 		return;
 
-	if (vm_page_wired(m) || !pmap_page_exists_quick(pmap, m)) {
+	/* if (vm_page_wired(m) || !pmap_page_exists_quick(pmap, m)) {
 		vm_page_xunbusy(m);
 		return;
-	}
+	} */
 	// if (!pmap_is_referenced(m)) {
 		if (!vm_page_active(m)) {
 			(void)vm_page_try_remove_all(m);
@@ -242,7 +242,6 @@ vm_swapout_object_deactivate(pmap_t pmap, vm_object_t first_object,
 		 * Scan the object's entire memory queue.
 		 */
 		TAILQ_FOREACH(m, &object->memq, listq) {
-			// printf("Looking inside the object count %lu, desired %lu\n", pmap_resident_count(pmap), desired);
 			if (pmap_resident_count(pmap) <= desired)
 				goto unlock_return;
 			vm_swapout_object_deactivate_page(pmap, m, unmap);

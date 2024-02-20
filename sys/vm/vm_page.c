@@ -2041,16 +2041,20 @@ again:
 		goto found;
 	}
 #endif
-	vm_pindex_t limit, size;
-	struct rlimit rsslim;
-	lim_rlimit_proc(curproc, RLIMIT_RSS, &rsslim);
+	if (curproc != NULL) { 
+		vm_pindex_t limit, size;
+		struct rlimit rsslim;
+		lim_rlimit_proc(curproc, RLIMIT_RSS, &rsslim);
+		
+		limit = OFF_TO_IDX(
+				qmin(rsslim.rlim_cur, rsslim.rlim_max));
+		if (curproc->p_vmspace != NULL) {
+			size = vmspace_resident_count(curproc->p_vmspace);
 
-	limit = OFF_TO_IDX(
-			qmin(rsslim.rlim_cur, rsslim.rlim_max));
-	size = vmspace_resident_count(curproc->p_vmspace);
-
-	if (size > limit) {
-		printf("Size exceeded pid: %d, limit %lu\n", curproc->p_pid, limit); 
+			if (size > limit) {
+				printf("Size exceeded pid: %d, limit %lu\n", curproc->p_pid, limit); 
+			}
+		}
 	}
 	
 	vmd = VM_DOMAIN(domain);

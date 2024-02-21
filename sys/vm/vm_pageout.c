@@ -2197,9 +2197,13 @@ vm_pageout_worker(void *arg)
 		 * Scan the active queue.  A positive value for shortage
 		 * indicates that we must aggressively deactivate pages to avoid
 		 * a shortfall.
+		 * XXX: I removed it for now because we only want vm_daemon
+		 * to put pages on the inactive queue.
 		 */
+		/*
 		shortage = vm_pageout_active_target(vmd) + addl_shortage;
 		vm_pageout_scan_active(vmd, shortage);
+		*/
 	}
 }
 

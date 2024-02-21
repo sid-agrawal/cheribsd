@@ -2064,7 +2064,8 @@ again:
 			// pip at the level of vm_object.
 			if (size > limit) {
 				printf("Size exceeded pid: %d, size %lu, limit %lu\n"
-						, curproc->p_pid, size, limit); 
+						, curproc->p_pid, size, limit);
+				// Wakeup vm_daemon to support our emergency.
 				PROC_UNLOCK(curproc);
 				return NULL;
 			}

@@ -481,6 +481,8 @@ again:
 			sx_sunlock(&allproc_lock);
 
 			size = vmspace_resident_count(vm);
+			// XXX: swapout 5% more pages.
+			limit += (limit >> 4);
 			// initial_size = size;
 			// printf("PID: %d,  RSS: %lu\n", p->p_pid, size);
 			if (size >= limit) {

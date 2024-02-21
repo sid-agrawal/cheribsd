@@ -2059,7 +2059,10 @@ again:
 		if (curproc->p_vmspace != NULL) {
 			size = vmspace_resident_count(curproc->p_vmspace);
 
-			if (size > limit) {
+			// TODO(shaurp): Do we have a deadlock here if we are
+			// trying to access something from swap, daemon checks 
+			// pip at the level of vm_object.
+			if (size > limit + 1000) {
 				printf("Size exceeded pid: %d, size %lu, limit %lu\n"
 						, curproc->p_pid, size, limit); 
 				PROC_UNLOCK(curproc);

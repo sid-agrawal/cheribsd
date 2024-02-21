@@ -229,8 +229,8 @@ vm_swapout_object_deactivate(pmap_t pmap, vm_object_t first_object,
 		if (pmap_resident_count(pmap) < desired)
 			goto unlock_return;
 		VM_OBJECT_ASSERT_LOCKED(object);
-		if ((object->flags & OBJ_UNMANAGED) != 0 ||
-		    blockcount_read(&object->paging_in_progress) > 0) {
+		// XXX: why is pip a problem? PIP pages are marked busy.
+		if ((object->flags & OBJ_UNMANAGED) != 0) {
 			printf("PIP causing stalls?\n");
 			goto unlock_return;
 		}

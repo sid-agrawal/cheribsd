@@ -231,7 +231,6 @@ vm_swapout_object_deactivate(pmap_t pmap, vm_object_t first_object,
 		VM_OBJECT_ASSERT_LOCKED(object);
 		// XXX: why is pip a problem? PIP pages are marked busy.
 		if ((object->flags & OBJ_UNMANAGED) != 0) {
-			printf("PIP causing stalls?\n");
 			goto unlock_return;
 		}
 		// printf("Obtained object for swapping\n");

@@ -226,14 +226,14 @@ vm_swapout_object_deactivate(pmap_t pmap, vm_object_t first_object,
 	if ((first_object->flags & OBJ_FICTITIOUS) != 0)
 		return;
 	for (object = first_object;; object = backing_object) {
-		// XXX: 1000 is a grace factor which should be percent based.
 		if (pmap_resident_count(pmap) < desired)
 			goto unlock_return;
 		VM_OBJECT_ASSERT_LOCKED(object);
 		if ((object->flags & OBJ_UNMANAGED) != 0 ||
-		    blockcount_read(&object->paging_in_progress) > 0)
+		    blockcount_read(&object->paging_in_progress) > 0) {
+			printf("PIP causing stalls?"\n");
 			goto unlock_return;
-
+		}
 		// printf("Obtained object for swapping\n");
 		// TODO(shaurp): Do we want to do this?
 		unmap = true;
@@ -244,8 +244,6 @@ vm_swapout_object_deactivate(pmap_t pmap, vm_object_t first_object,
 		 * Scan the object's entire memory queue.
 		 */
 		TAILQ_FOREACH(m, &object->memq, listq) {
-
-		// XXX: 1000 is a grace factor which should be percent based.
 			if (pmap_resident_count(pmap) < desired)
 				goto unlock_return;
 			vm_swapout_object_deactivate_page(pmap, m, unmap);

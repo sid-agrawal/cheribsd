@@ -2067,6 +2067,7 @@ again:
 						, curproc->p_pid, size, limit);
 				// Wakeup vm_daemon to support our emergency.
 				PROC_UNLOCK(curproc);
+				vm_req_vmdaemon(VM_SWAP_NORMAL);
 				return NULL;
 			}
 		}

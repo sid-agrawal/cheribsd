@@ -195,6 +195,7 @@ vm_swapout_object_deactivate_page(pmap_t pmap, vm_page_t m, bool unmap)
 	if (!vm_page_active(m)) {
 		(void)vm_page_try_remove_all(m);
 		// printf("Unmapping page\n");
+		// XXX: protect with mutex.
 		deactivated_pages++;
 	} else if (unmap && vm_page_try_remove_all(m)) {
 		// printf("Deactivating page\n");

@@ -2062,7 +2062,7 @@ again:
 			// TODO(shaurp): Do we have a deadlock here if we are
 			// trying to access something from swap, daemon checks 
 			// pip at the level of vm_object.
-			if (size > (limit + 10)) {
+			if (size > limit) {
 				printf("Size exceeded pid: %d, size %lu, limit %lu\n"
 						, curproc->p_pid, size, limit); 
 				PROC_UNLOCK(curproc);

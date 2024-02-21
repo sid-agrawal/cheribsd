@@ -231,7 +231,7 @@ vm_swapout_object_deactivate(pmap_t pmap, vm_object_t first_object,
 		VM_OBJECT_ASSERT_LOCKED(object);
 		if ((object->flags & OBJ_UNMANAGED) != 0 ||
 		    blockcount_read(&object->paging_in_progress) > 0) {
-			printf("PIP causing stalls?"\n");
+			printf("PIP causing stalls?\n");
 			goto unlock_return;
 		}
 		// printf("Obtained object for swapping\n");

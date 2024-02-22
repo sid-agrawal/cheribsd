@@ -30,14 +30,14 @@ int main(int argc,char* argv[])
         int num_nodes = atoi(argv[1]); 
        
 	/* Set RSS limit to wss/2 */
-	struct rlimit *constrain_memory = (struct rlimit *) malloc(sizeof(struct rlimit));
+	/* struct rlimit *constrain_memory = (struct rlimit *) malloc(sizeof(struct rlimit));
     	constrain_memory->rlim_cur = (1UL << (num_nodes - 1)) * sizeof(struct node);
     	constrain_memory->rlim_max = (1UL << (num_nodes - 1)) * sizeof(struct node);
    	setrlimit(RLIMIT_RSS, constrain_memory);
 
 	if (constrain_memory->rlim_cur == 0)
 		return 0; 
-
+	*/
 	/* Set total memory consumption */
 	num_nodes = 1UL << num_nodes;
 	

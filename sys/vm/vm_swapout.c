@@ -480,8 +480,11 @@ again:
 
 			size = vmspace_resident_count(vm);
 			// XXX: swapout 5% more pages.
+			printf("Limit: %lu\n", limit);
 			if (limit > 128) 
 				limit -= 128;
+
+			print("New limit %lu\n", limit);
 			// initial_size = size;
 			// printf("PID: %d,  RSS: %lu\n", p->p_pid, size);
 			if (size >= limit) {

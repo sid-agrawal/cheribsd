@@ -240,7 +240,7 @@ vm_swapout_object_deactivate(pmap_t pmap, vm_object_t first_object,
 		 * XXX: do we really need to check for pip here?
 		 * This might significantly slow things down. 
 		*/
-		if ((object->flags & OBJ_UNMANAGED) != 0
+		if ((object->flags & OBJ_UNMANAGED) != 0 ||
 			  blockcount_read(&object->paging_in_progress) > 0) {	
 			goto unlock_return;
 		}

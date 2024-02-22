@@ -119,7 +119,7 @@ __FBSDID("$FreeBSD$");
 /*
  * System initialization
  */
-
+extern struct mtx deactivated_pages_mtx;
 /* the kernel process "vm_pageout"*/
 static void vm_pageout(void);
 static void vm_pageout_init(void);
@@ -1024,8 +1024,10 @@ vm_pageout_laundry_worker(void *arg)
 		 * shortage of free pages.
 		 */
 		if (deactivated_pages > 0) {
+			mtx_lock(&deactivated_pages_mtx);
 			launder = deactivated_pages;
 			target = deactivated_pages;
+			mtx_unlock(&deactivated_pages_mtx);
 			goto dolaundry;
 		}
 
@@ -1110,9 +1112,12 @@ dolaundry:
 			// printf("Laundering %d pages\n", launder);
 			target -= min(vm_pageout_launder(vmd, launder,
 			    in_shortfall), target);
+			mtx_lock(&deactivated_pages_mtx);
 			deactivated_pages -= target;
 			if (deactivated_pages < 0) 
 				deactivated_pages = 0;
+			
+			mtx_unlock(&deactivated_pages_mtx);
 			pause("laundp", hz / VM_LAUNDER_RATE);
 		}
 
@@ -2107,7 +2112,7 @@ vm_pageout_worker(void *arg)
 {
 	struct vm_domain *vmd;
 	u_int ofree;
-	int addl_shortage, domain, shortage;
+	int addl_shortage, domain, shortage, deactivated_pages_shortage;
 	bool target_met;
 
 	domain = (uintptr_t)arg;
@@ -2183,22 +2188,24 @@ vm_pageout_worker(void *arg)
 		} else
 			addl_shortage = 0;
 
-		if (deactivated_pages > 0) {
+		mtx_lock(&deactivated_pages_mtx);
+		deactivated_pages_shortage = deactivated_pages; 
+		mtx_unlock(&deactivated_pages_mtx);
+		
+		if (deactivated_pages_shortage > 0) {
 			// printf("Moving pages from inactive %d\n", 
 			// 		deactivated_pages);
-			vm_pageout_inactive(vmd, deactivated_pages, 
+		vm_pageout_inactive(vmd, deactivated_pages_shortage, 
 					&addl_shortage);
 		}
-		// TODO(shaurp): Don't scan active unless necessary.
-		// Could a simple way be to move entire inactive queue to 
-		// laundry?
+		// XXX: Hack, we removed active scanning because we want to
+		// ensure only one processes pages are swapped out, in a real
+		// implementation, this would still be as before.
 
 		/*
 		 * Scan the active queue.  A positive value for shortage
 		 * indicates that we must aggressively deactivate pages to avoid
 		 * a shortfall.
-		 * XXX: I removed it for now because we only want vm_daemon
-		 * to put pages on the inactive queue.
 		 */
 		/*
 		shortage = vm_pageout_active_target(vmd) + addl_shortage;

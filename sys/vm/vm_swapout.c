@@ -164,6 +164,9 @@ static struct mtx vm_daemon_mtx;
 /* Allow for use by vm_pageout before vm_daemon is initialized. */
 MTX_SYSINIT(vm_daemon, &vm_daemon_mtx, "vm daemon", MTX_DEF);
 
+/* Protect deactivated pages */
+struct mtx deactivate_pages_mtx; 
+
 static int swapped_cnt;
 static int swap_inprogress;	/* Pending swap-ins done outside swapper. */
 static int last_swapin;
@@ -192,16 +195,20 @@ vm_swapout_object_deactivate_page(pmap_t pmap, vm_page_t m, bool unmap)
 		return;
 	} */
 	// if (!pmap_is_referenced(m)) {
+	mtx_lock(&deactivate_pages_mtx);
 	if (!vm_page_active(m)) {
 		(void)vm_page_try_remove_all(m);
 		// printf("Unmapping page\n");
 		// XXX: protect with mutex.
+
 		deactivated_pages++;
 	} else if (unmap && vm_page_try_remove_all(m)) {
 		// printf("Deactivating page\n");
 		vm_page_deactivate(m);
 		deactivated_pages++;
 	}
+
+	mtx_unlock(&deactivate_pages_mtx);
 	// }
 	vm_page_xunbusy(m);
 }
@@ -233,7 +240,6 @@ vm_swapout_object_deactivate(pmap_t pmap, vm_object_t first_object,
 		if ((object->flags & OBJ_UNMANAGED) != 0) {
 			goto unlock_return;
 		}
-		// printf("Obtained object for swapping\n");
 		// TODO(shaurp): Do we want to do this?
 		unmap = true;
 		if (object->shadow_count > 1)
@@ -395,6 +401,8 @@ vm_daemon(void)
 #endif
 
 	printf("Running vm daemon\n");
+
+	mtx_sysinit(deactivate_pages, &deactivate_pages_mtx, "deactivate_pages", MTX_SPIN);
 	while (TRUE) {
 		mtx_lock(&vm_daemon_mtx);
 		msleep(&vm_daemon_needed, &vm_daemon_mtx, PPAUSE, "psleep",
@@ -480,7 +488,7 @@ again:
 
 			size = vmspace_resident_count(vm);
 			// XXX: swapout 5% more pages.
-			if (limit > 128) 
+			if (limit > 128)
 				limit -= 128;
 			// initial_size = size;
 			// printf("PID: %d,  RSS: %lu\n", p->p_pid, size);

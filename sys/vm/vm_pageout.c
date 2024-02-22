@@ -1024,10 +1024,10 @@ vm_pageout_laundry_worker(void *arg)
 		 * shortage of free pages.
 		 */
 		if (deactivated_pages > 0) {
-			mtx_lock(&deactivated_pages_mtx);
+			// mtx_lock(&deactivated_pages_mtx);
 			launder = deactivated_pages;
 			target = deactivated_pages;
-			mtx_unlock(&deactivated_pages_mtx);
+			// mtx_unlock(&deactivated_pages_mtx);
 			goto dolaundry;
 		}
 
@@ -1112,12 +1112,12 @@ dolaundry:
 			// printf("Laundering %d pages\n", launder);
 			target -= min(vm_pageout_launder(vmd, launder,
 			    in_shortfall), target);
-			mtx_lock(&deactivated_pages_mtx);
+			// mtx_lock(&deactivated_pages_mtx);
 			deactivated_pages -= target;
 			if (deactivated_pages < 0) 
 				deactivated_pages = 0;
 			
-			mtx_unlock(&deactivated_pages_mtx);
+			// mtx_unlock(&deactivated_pages_mtx);
 			pause("laundp", hz / VM_LAUNDER_RATE);
 		}
 
@@ -2188,9 +2188,9 @@ vm_pageout_worker(void *arg)
 		} else
 			addl_shortage = 0;
 
-		mtx_lock(&deactivated_pages_mtx);
+		// mtx_lock(&deactivated_pages_mtx);
 		deactivated_pages_shortage = deactivated_pages; 
-		mtx_unlock(&deactivated_pages_mtx);
+		// mtx_unlock(&deactivated_pages_mtx);
 		
 		if (deactivated_pages_shortage > 0) {
 			// printf("Moving pages from inactive %d\n", 

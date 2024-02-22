@@ -236,8 +236,12 @@ vm_swapout_object_deactivate(pmap_t pmap, vm_object_t first_object,
 		if (pmap_resident_count(pmap) < desired)
 			goto unlock_return;
 		VM_OBJECT_ASSERT_LOCKED(object);
-		// XXX: why is pip a problem? PIP pages are marked busy.
-		if ((object->flags & OBJ_UNMANAGED) != 0) {
+		/*
+		 * XXX: do we really need to check for pip here?
+		 * This might significantly slow things down. 
+		*/
+		if ((object->flags & OBJ_UNMANAGED) != 0
+			  blockcount_read(&object->paging_in_progress) > 0) {	
 			goto unlock_return;
 		}
 		// TODO(shaurp): Do we want to do this?

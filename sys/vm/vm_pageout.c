@@ -119,7 +119,7 @@ __FBSDID("$FreeBSD$");
 /*
  * System initialization
  */
-extern struct mtx deactivated_pages_mtx;
+extern struct mtx deactivate_pages_mtx;
 /* the kernel process "vm_pageout"*/
 static void vm_pageout(void);
 static void vm_pageout_init(void);

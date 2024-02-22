@@ -166,6 +166,7 @@ MTX_SYSINIT(vm_daemon, &vm_daemon_mtx, "vm daemon", MTX_DEF);
 
 /* Protect deactivated pages */
 struct mtx deactivate_pages_mtx; 
+MTX_SYSINIT(deactivate_pages, &deactivate_pages_mtx, "deactivate_pages", MTX_SPIN);
 
 static int swapped_cnt;
 static int swap_inprogress;	/* Pending swap-ins done outside swapper. */
@@ -406,7 +407,6 @@ vm_daemon(void)
 
 	printf("Running vm daemon\n");
 
-	mtx_sysinit(deactivate_pages, &deactivate_pages_mtx, "deactivate_pages", MTX_SPIN);
 	while (TRUE) {
 		mtx_lock(&vm_daemon_mtx);
 		msleep(&vm_daemon_needed, &vm_daemon_mtx, PPAUSE, "psleep",

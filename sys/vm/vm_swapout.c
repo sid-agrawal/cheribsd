@@ -184,19 +184,22 @@ static void
 vm_swapout_object_deactivate_page(pmap_t pmap, vm_page_t m, bool unmap)
 {
 
+	
+	mtx_lock_spin(&deactivate_pages_mtx);
 	/*
 	 * Ignore unreclaimable wired pages.  Repeat the check after busying
 	 * since a busy holder may wire the page.
 	 */
-	if (vm_page_wired(m) || !vm_page_tryxbusy(m))
+	if (vm_page_wired(m) || !vm_page_tryxbusy(m)) {
+		mtx_unlock_spin(&deactivate_pages_mtx);
 		return;
+	}
 
 	/* if (vm_page_wired(m) || !pmap_page_exists_quick(pmap, m)) {
 		vm_page_xunbusy(m);
 		return;
 	} */
 	// if (!pmap_is_referenced(m)) {
-	mtx_lock(&deactivate_pages_mtx);
 	if (!vm_page_active(m)) {
 		(void)vm_page_try_remove_all(m);
 		// printf("Unmapping page\n");
@@ -209,9 +212,10 @@ vm_swapout_object_deactivate_page(pmap_t pmap, vm_page_t m, bool unmap)
 		deactivated_pages++;
 	}
 
-	mtx_unlock(&deactivate_pages_mtx);
 	// }
 	vm_page_xunbusy(m);
+
+	mtx_unlock_spin(&deactivate_pages_mtx);
 }
 
 /*

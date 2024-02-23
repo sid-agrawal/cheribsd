@@ -35,8 +35,10 @@ int main(int argc,char* argv[])
     	constrain_memory->rlim_max = (1UL << (num_nodes - 1)) * sizeof(struct node);
    	setrlimit(RLIMIT_RSS, constrain_memory);
 
-	if (constrain_memory->rlim_cur == 0)
+	if (constrain_memory->rlim_cur == 0) {
+		printf("Constrained memory value was incorrect\n");
 		return 0; 
+	}
 	
 	/* Set total memory consumption */
 	num_nodes = 1UL << num_nodes;

@@ -184,7 +184,7 @@ vm_swapout_object_deactivate_page(pmap_t pmap, vm_page_t m, bool unmap)
 {
 
 	
-	mtx_lock(&deactivate_pages_mtx);
+	// mtx_lock(&deactivate_pages_mtx);
 	/*
 	 * Ignore unreclaimable wired pages.  Repeat the check after busying
 	 * since a busy holder may wire the page.
@@ -214,7 +214,7 @@ vm_swapout_object_deactivate_page(pmap_t pmap, vm_page_t m, bool unmap)
 	// }
 	vm_page_xunbusy(m);
 
-	mtx_unlock(&deactivate_pages_mtx);
+	// mtx_unlock(&deactivate_pages_mtx);
 }
 
 /*

@@ -165,8 +165,9 @@ static struct mtx vm_daemon_mtx;
 MTX_SYSINIT(vm_daemon, &vm_daemon_mtx, "vm daemon", MTX_DEF);
 
 /* Protect deactivated pages */
-struct mtx deactivate_pages_mtx;
-MTX_SYSINIT(deactivate_pages, &deactivate_pages_mtx, "deactivate pages", MTX_SPIN);
+/* struct mtx deactivate_pages_mtx;
+MTX_SYSINIT(deactivate_pages, &deactivate_pages_mtx, "deactivate pages", MTX_DEF);
+*/
 static int swapped_cnt;
 static int swap_inprogress;	/* Pending swap-ins done outside swapper. */
 static int last_swapin;

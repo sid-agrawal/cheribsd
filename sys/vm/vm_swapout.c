@@ -165,9 +165,8 @@ static struct mtx vm_daemon_mtx;
 MTX_SYSINIT(vm_daemon, &vm_daemon_mtx, "vm daemon", MTX_DEF);
 
 /* Protect deactivated pages */
-struct mtx deactivate_pages_mtx; 
-MTX_SYSINIT(deactivate_pages, &deactivate_pages_mtx, "deactivate_pages", MTX_SPIN);
-
+struct mtx deactivate_pages_mtx;
+MTX_SYSINIT(deactivate_pages, &deactivate_pages_mtx, "deactivate pages", MTX_SPIN);
 static int swapped_cnt;
 static int swap_inprogress;	/* Pending swap-ins done outside swapper. */
 static int last_swapin;
@@ -185,13 +184,13 @@ vm_swapout_object_deactivate_page(pmap_t pmap, vm_page_t m, bool unmap)
 {
 
 	
-	mtx_lock_spin(&deactivate_pages_mtx);
+	mtx_lock(&deactivate_pages_mtx);
 	/*
 	 * Ignore unreclaimable wired pages.  Repeat the check after busying
 	 * since a busy holder may wire the page.
 	 */
 	if (vm_page_wired(m) || !vm_page_tryxbusy(m)) {
-		mtx_unlock_spin(&deactivate_pages_mtx);
+		mtx_unlock(&deactivate_pages_mtx);
 		return;
 	}
 
@@ -215,7 +214,7 @@ vm_swapout_object_deactivate_page(pmap_t pmap, vm_page_t m, bool unmap)
 	// }
 	vm_page_xunbusy(m);
 
-	mtx_unlock_spin(&deactivate_pages_mtx);
+	mtx_unlock(&deactivate_pages_mtx);
 }
 
 /*

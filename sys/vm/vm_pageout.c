@@ -1109,10 +1109,9 @@ dolaundry:
 			 * a cluster minus one. 
 			 */
 			printf("Laundering %d pages\n", launder);
-			int initial_target = -1 * launder;
 			target -= min(vm_pageout_launder(vmd, launder,
 			    in_shortfall), target);
-			update_deactivated_pages(intial_target + target);
+			update_deactivated_pages(-1 * target);
 			pause("laundp", hz / VM_LAUNDER_RATE);
 		}
 

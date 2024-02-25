@@ -1108,7 +1108,8 @@ dolaundry:
 			 * pages could exceed "target" by the maximum size of
 			 * a cluster minus one. 
 			 */
-			int initial_target = -1 * target;
+			printf("Laundering %d pages\n", launder);
+			int initial_target = -1 * launder;
 			target -= min(vm_pageout_launder(vmd, launder,
 			    in_shortfall), target);
 			update_deactivated_pages(intial_target + target);

@@ -147,6 +147,7 @@ vm_mem_init(void *dummy)
 
 	kmem_init_zero_region();
 	pmap_init();
+	init_deactivated_pages_lock();
 	vm_pager_init();
 	vm_pc_data_init();
 }

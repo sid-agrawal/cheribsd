@@ -372,8 +372,9 @@ vm_fault_dirty(struct faultstate *fs, vm_page_t m)
  */
 static struct pc_data * check_or_allocate_pc_data(uint64_t pc) {
 
-	// TODO(shaurp): Probably need to lock here?
+	int curr_index;
 	rw_wlock(&pc_data_lock);
+
 	for (int i =0; i < curr_pc_data; i++) {
 		if (pc_data_cache[i].pc == pc) {
 			pc_data_cache[i].prev_prefetch_count++;
@@ -381,6 +382,7 @@ static struct pc_data * check_or_allocate_pc_data(uint64_t pc) {
 			return &pc_data_cache[i];
 		}
 	}
+	// XXX: maybe this unlock can be avoided.
 	rw_wunlock(&pc_data_lock);
 	if (curr_pc_data >= 1024) 
 		return NULL;
@@ -393,8 +395,9 @@ static struct pc_data * check_or_allocate_pc_data(uint64_t pc) {
 	pc_data_cache[curr_pc_data].curr_window_count = 0;
 	// PC_DATA_WUNLOCK(pc_data_cache[curr_pc_data]);
 	curr_pc_data++;
+	curr_index = curr_pc_data;
 	rw_wunlock(&pc_data_lock);
-	return &pc_data_cache[curr_pc_data - 1];
+	return &pc_data_cache[curr_index - 1];
 }
 
 // TODO(shaurp): Trigger this function.

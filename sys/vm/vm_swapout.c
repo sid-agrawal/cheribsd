@@ -119,6 +119,8 @@ __FBSDID("$FreeBSD$");
 static void vm_daemon(void);
 static struct proc *vmproc;
 int deactivated_pages = 0;
+struct rwlock deactivated_pages_lock;
+
 static struct kproc_desc vm_kp = {
 	"vmdaemon",
 	vm_daemon,
@@ -180,6 +182,37 @@ static void swapout_procs(int action);
 static void vm_req_vmdaemon(int req);
 static void vm_thread_swapout(struct thread *td);
 
+
+void init_deactivated_pages_lock() {
+	rw_init(&deactivated_pages_lock, "deactivated_pages_lock");
+}
+
+/*
+ * Update the deactivated pages counter.
+ * Update can be negative once laundry writes
+ * pages out.
+ */
+void update_deactivated_pages(int update) {
+	rw_wlock(&deactivated_pages_lock);
+	deactivated_pages += update;
+	// XXX: maybe replace with assert instead in the future.
+	if (deactivated_pages < 0)
+		deactivated_pages = 0;
+	rw_wunlock(&deactivated_pages_lock);
+}
+
+int get_deactivated_pages() {
+	int curr_deactivated_pages;
+
+	rw_rlock(&deactivated_pages_lock);
+	curr_deactivated_pages = deactivated_pages;
+	rw_runlock(&deactivated_pages_lock);
+
+	return curr_deactivated_pages;
+
+}
+
+
 static void
 vm_swapout_object_deactivate_page(pmap_t pmap, vm_page_t m, bool unmap)
 {
@@ -202,14 +235,12 @@ vm_swapout_object_deactivate_page(pmap_t pmap, vm_page_t m, bool unmap)
 	// if (!pmap_is_referenced(m)) {
 	if (!vm_page_active(m)) {
 		(void)vm_page_try_remove_all(m);
-		// printf("Unmapping page\n");
-		// XXX: protect with mutex.
-
-		deactivated_pages++;
+		// deactivated_pages++;
+		update_deactivated_pages(1);
 	} else if (unmap && vm_page_try_remove_all(m)) {
-		// printf("Deactivating page\n");
 		vm_page_deactivate(m);
-		deactivated_pages++;
+		// deactivated_pages++;
+		update_deactivated_pages(1);
 	}
 
 	// }

@@ -1109,15 +1109,11 @@ dolaundry:
 			 * pages could exceed "target" by the maximum size of
 			 * a cluster minus one. 
 			 */
-			// printf("Laundering %d pages\n", launder);
+			int initial_target = -1 * target;
 			target -= min(vm_pageout_launder(vmd, launder,
 			    in_shortfall), target);
-			// mtx_lock(&deactivated_pages_mtx);
-			deactivated_pages -= target;
-			if (deactivated_pages < 0) 
-				deactivated_pages = 0;
-			
-			// mtx_unlock(&deactivated_pages_mtx);
+			printf("Target is %d, intial target %d\n", target, initial_target);	
+			update_deactivated_pages(intial_target + target);
 			pause("laundp", hz / VM_LAUNDER_RATE);
 		}
 
@@ -2189,7 +2185,7 @@ vm_pageout_worker(void *arg)
 			addl_shortage = 0;
 
 		// mtx_lock(&deactivated_pages_mtx);
-		deactivated_pages_shortage = deactivated_pages; 
+		deactivated_pages_shortage = get_deactivated_pages(); 
 		// mtx_unlock(&deactivated_pages_mtx);
 		
 		if (deactivated_pages_shortage > 0) {

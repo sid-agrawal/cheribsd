@@ -198,7 +198,6 @@ void update_deactivated_pages(int update) {
 	// XXX: maybe replace with assert instead in the future.
 	if (deactivated_pages < 0)
 		deactivated_pages = 0;
-	printf("Deactivated pages updated: %d\n", deactivated_pages);
 	rw_wunlock(&deactivated_pages_lock);
 }
 

@@ -1685,7 +1685,8 @@ vm_pageout_inactive_dispatch(struct vm_domain *vmd, int shortage)
 	}
 
 	/* Run the local thread scan. */
-	vm_pageout_scan_inactive(vmd, deactivated_pages > 0 ? deactivated_pages 
+	int curr_deactivated_pages = get_deactivated_pages();
+	vm_pageout_scan_inactive(vmd, curr_deactivated_pages > 0 ? curr_deactivated_pages 
 			: vmd->vmd_inactive_shortage + slop);
 
 	/*
@@ -2183,9 +2184,7 @@ vm_pageout_worker(void *arg)
 		} else
 			addl_shortage = 0;
 
-		// mtx_lock(&deactivated_pages_mtx);
 		deactivated_pages_shortage = get_deactivated_pages(); 
-		// mtx_unlock(&deactivated_pages_mtx);
 		
 		if (deactivated_pages_shortage > 0) {
 			// printf("Moving pages from inactive %d\n", 

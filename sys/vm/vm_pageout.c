@@ -1112,7 +1112,6 @@ dolaundry:
 			int initial_target = -1 * target;
 			target -= min(vm_pageout_launder(vmd, launder,
 			    in_shortfall), target);
-			printf("Target is %d, intial target %d\n", target, initial_target);	
 			update_deactivated_pages(intial_target + target);
 			pause("laundp", hz / VM_LAUNDER_RATE);
 		}

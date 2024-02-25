@@ -69,6 +69,7 @@ int main(int argc,char* argv[])
         struct node *ll_head, *ll_curr;
         for (int i = 0; i < num_nodes; i++ ) {
 
+		printf("Assigning %d\n", i);
                 num = randArr[i];
                 if(first) {
                         first = 0;
@@ -102,7 +103,7 @@ int main(int argc,char* argv[])
 
 	while(ll_curr != NULL) {
 		ll_curr = ll_curr->next;
-		// printf("%p\n", ll_curr);
+		printf("%p\n", ll_curr);
 		count++;
 		if(ll_curr != NULL) {
                         for (int i = 0; i < cyclesPerNode ; i++){

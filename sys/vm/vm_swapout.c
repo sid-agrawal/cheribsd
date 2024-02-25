@@ -230,18 +230,19 @@ vm_swapout_object_deactivate_page(pmap_t pmap, vm_page_t m, bool unmap)
 		vm_page_xunbusy(m);
 		return;
 	} */
-	// if (!pmap_is_referenced(m)) {
-	if (!vm_page_active(m)) {
-		(void)vm_page_try_remove_all(m);
-		// deactivated_pages++;
-		update_deactivated_pages(1);
-	} else if (unmap && vm_page_try_remove_all(m)) {
-		vm_page_deactivate(m);
-		// deactivated_pages++;
-		update_deactivated_pages(1);
-	}
+	// Can this cause a deadlock?
+	if (!pmap_ts_referenced(m)) {
+		if (!vm_page_active(m)) {
+			(void)vm_page_try_remove_all(m);
+			// deactivated_pages++;
+			update_deactivated_pages(1);
+		} else if (unmap && vm_page_try_remove_all(m)) {
+			vm_page_deactivate(m);
+			// deactivated_pages++;
+			update_deactivated_pages(1);
+		}
 
-	// }
+	}
 	vm_page_xunbusy(m);
 
 }

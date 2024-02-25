@@ -336,6 +336,116 @@ vm_fault_dirty(struct faultstate *fs, vm_page_t m)
 
 }
 /*
+ * Allocate and update the pc data cache. 
+ * We return the address and the value can be modified by the caller.
+ * Appropriate locking is necessary.
+ */
+static struct pc_data * check_or_allocate_pc_data(uint64_t pc) {
+
+	int curr_index;
+	rw_wlock(&pc_data_lock);
+
+	for (int i =0; i < curr_pc_data; i++) {
+		if (pc_data_cache[i].pc == pc) {
+			pc_data_cache[i].prev_prefetch_count++;
+			rw_wunlock(&pc_data_lock);
+			return &pc_data_cache[i];
+		}
+	}
+	// XXX: maybe this unlock can be avoided.
+	rw_wunlock(&pc_data_lock);
+	if (curr_pc_data >= 1024) 
+		return NULL;
+
+	// rw_init(&(pc_data_cache[curr_pc_data].lock), "pc_cache_lock");
+	// PC_DATA_WLOCK(pc_data_cache[curr_pc_data]);
+	rw_wlock(&pc_data_lock);
+	pc_data_cache[curr_pc_data].pc = pc;
+	pc_data_cache[curr_pc_data].prev_prefetch_count = 1;
+	pc_data_cache[curr_pc_data].curr_window_count = 0;
+	// PC_DATA_WUNLOCK(pc_data_cache[curr_pc_data]);
+	curr_pc_data++;
+	curr_index = curr_pc_data;
+	rw_wunlock(&pc_data_lock);
+	return &pc_data_cache[curr_index - 1];
+}
+
+// TODO(shaurp): Trigger this function.
+static void print_pc_data_cache(int pc_to_print) {
+	for(int i =pc_to_print; i < pc_to_print + 1; i++) {
+		printf("PC: %lx, prefetches: %lu, hits: %lu\n", 
+				pc_data_cache[i].pc, 
+				pc_data_cache[i].prev_prefetch_count,
+				pc_data_cache[i].total_hits);
+	}
+}
+
+/*
+ * Update total hits per PC
+ */
+static bool update_pc_hits(uint64_t pc) {
+
+	rw_wlock(&pc_data_lock);
+	for (int i =0; i < curr_pc_data; i++) {
+		if (pc_data_cache[i].pc == pc) {
+			// printf("Data found\n");
+			//PC_DATA_WLOCK(pc_data_cache[curr_pc_data]);
+			pc_data_cache[i].total_hits++;
+			print_pc_data_cache(i);
+			//PC_DATA_WUNLOCK(pc_data_cache[curr_pc_data]);
+			rw_wunlock(&pc_data_lock);
+			return true; 
+		}
+	}
+	rw_wunlock(&pc_data_lock);
+	return false;
+}
+
+
+
+/*
+static struct pc_data * check_or_allocate_pc_data(uint64_t pc, bool allocate) {
+	struct pc_data *curr = pc_data_cache; 
+
+	// Todo: There is a bug here. 
+	while(curr && curr->next != NULL) {
+		curr = curr->next;
+		if (curr->pc == pc)
+			return curr;
+	}
+	
+	if (allocate) {
+		struct pc_data * new  = malloc(sizeof(struct pc_data), M_CACHE, M_NOWAIT);
+
+		// Error in allocation
+		if (!new) 
+			return NULL; 
+
+		curr->next = new;
+		new->pc = pc; 
+		new->prev_prefetch_count = 0; 
+		new->curr_window_count = 0;
+		new->next = NULL;
+		return new;
+	}
+
+	return NULL;
+
+}
+static struct pc_data * check_pc_data_cache(uint64_t pc) {
+	struct pc_data * curr = pc_data_cache;
+	while(curr != NULL) {
+		if (curr->pc == pc)
+			return curr;
+		curr = curr->next; 
+	}
+	
+	return NULL;
+
+}
+*/
+
+/*
  * Runs the cheri prefetcher for softfaults and majorfaults
  * We don't distinguish between handling the two right now.
  */

@@ -109,5 +109,12 @@ void vm_pageout_oom(int shortage);
 void vm_swapout_run(void);
 void vm_swapout_run_idle(void);
 
+/*
+ * Synchronization for pages to launder.
+ */
+void update_deactivated_pages(int);
+int get_deactivated_pages(void);
+void init_deactivated_pages_lock(void);
+
 #endif /* _KERNEL */
 #endif	/* _VM_VM_PAGEOUT_H_ */

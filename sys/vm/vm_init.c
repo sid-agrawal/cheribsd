@@ -84,6 +84,7 @@ __FBSDID("$FreeBSD$");
 #include <sys/vmem.h>
 #include <sys/vmmeter.h>
 
+
 #include <cheri/cheric.h>
 
 #include <vm/vm.h>
@@ -96,7 +97,7 @@ __FBSDID("$FreeBSD$");
 #include <vm/vm_map.h>
 #include <vm/vm_pager.h>
 #include <vm/vm_extern.h>
-
+#include <vm/vm_pageout.h>
 extern void	uma_startup1(vm_offset_t);
 
 long physmem;

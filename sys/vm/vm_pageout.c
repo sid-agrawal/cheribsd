@@ -1023,11 +1023,10 @@ vm_pageout_laundry_worker(void *arg)
 		 * First determine whether we need to launder pages to meet a
 		 * shortage of free pages.
 		 */
-		if (deactivated_pages > 0) {
-			// mtx_lock(&deactivated_pages_mtx);
-			launder = deactivated_pages;
-			target = deactivated_pages;
-			// mtx_unlock(&deactivated_pages_mtx);
+		int curr_deactivated_pages = get_deactivated_pages();
+		if (curr_deactivated_pages > 0) {
+			launder = curr_deactivated_pages;
+			target = curr_deactivated_pages;
 			goto dolaundry;
 		}
 

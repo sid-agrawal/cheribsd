@@ -92,7 +92,7 @@ int main(int argc,char* argv[])
 
     	/* Traverse the List */
     	gettimeofday(&begin, 0);
-        clearCounters();
+        // clearCounters();
 	int a;
 	// scanf("%d", &a);
 	ll_curr->next = ll[num];
@@ -123,7 +123,7 @@ int main(int argc,char* argv[])
         printf("\"Delay\": %d,", cyclesPerNode);
         printf("\"ApproxMemoryConsumptionMB\": %d,", 
                         PAGE_SIZE*num_nodes/1024/1024);
-        printCounters();
+        // printCounters();
         printf("\"ConstructionSecond\": %ld,", CDur); 
         printf("\"TraversalSecond\": %ld", TDur); 
         printf("}");

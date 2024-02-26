@@ -164,6 +164,31 @@ struct faultstate {
 };
 
 /*
+ * Struct to track per PC data for cheri-picking.
+ * The prev_prefetch_count is updated using the number of hits
+ * in each window.
+ * TODO(shaurp): Does average hits ever make sense?
+ */
+struct pc_data {
+	uint64_t pc; 
+	uint64_t prev_prefetch_count;
+	uint64_t curr_window_count;
+	uint64_t total_hits;
+	// struct rwlock lock;
+};
+
+// TODO(shaurp): Does it make sense to have this per CPU? To prevent locking 
+// overhead.
+static struct pc_data pc_data_cache[1024];
+static int curr_pc_data = 0;
+struct rwlock pc_data_lock;
+#define	PC_DATA_WLOCK(object)					\
+	rw_wlock(&(object.lock))
+#define	PC_DATA_WUNLOCK(object)					\
+	rw_wunlock(&(object.lock))
+
+
+/*
  * Return codes for internal fault routines.
  */
 enum fault_status {
@@ -459,27 +484,21 @@ static int vm_cheri_readahead(struct faultstate *fs) {
 	if (!fs->m)
 		return FAULT_FAILURE;
 	mva = PHYS_TO_DMAP(VM_PAGE_TO_PHYS(fs->m));
-	printf("mva before: %lx\n", mva);
 	// Align to page boundary.
 	mve = mva + PAGE_SIZE; 
 	
-	mva += fs->actual_vaddr - fs->vaddr;
-	printf("mva after %lx\n", mva);
 
 	mvu = cheri_setbounds(cheri_setaddress(kdc, mva), PAGE_SIZE);
 
 	printf("CP analysis: Faulting address %lx, faulting page %lx\n",		
 			fs->actual_vaddr, fs->vaddr);
 	
-	printf("PC is %lx\n", fs->pc);
+	printf("PC: %lx\n", fs->pc);
 	int count = 0;
 	for(; cheri_getaddress(mvu) < mve; mvu++) {
 		++count;
 		if(cheri_gettag(*mvu)) {
 			vm_offset_t vaddr = cheri_getaddress(*mvu);
-			if (trunc_page(vaddr) == 
-					fs->vaddr)
-				continue;
 			printf("CP analysis: Address is %lx, offset is %d\n", 
 					vaddr, count);
 		}
@@ -1555,7 +1574,7 @@ vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
 				!P_KILLED(curproc) && 
 				fs->pc != 0 &&
 				!pctrie_is_empty(
-					&fs->object->un_pager.swp.swp_blks))) {
+					&fs->m->object->un_pager.swp.swp_blks))) {
 		
 		struct timespec start, end; 
 		nanotime(&start);

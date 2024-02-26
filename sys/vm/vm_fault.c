@@ -187,6 +187,11 @@ struct rwlock pc_data_lock;
 #define	PC_DATA_WUNLOCK(object)					\
 	rw_wunlock(&(object.lock))
 
+struct rwlock analysis_lock;
+#define	ANALYSIS_WLOCK(object)					\
+	rw_wlock(&(object.lock))
+#define	ANALYSIS_WUNLOCK(object)					\
+	rw_wunlock(&(object.lock))
 
 /*
  * Return codes for internal fault routines.
@@ -469,7 +474,9 @@ static struct pc_data * check_pc_data_cache(uint64_t pc) {
 
 }
 */
-
+void init_analysis() {
+	rw_init(&analysis_lock, "Analysis_lock");
+}
 /*
  * Runs the cheri prefetcher for softfaults and majorfaults
  * We don't distinguish between handling the two right now.
@@ -490,6 +497,7 @@ static int vm_cheri_readahead(struct faultstate *fs) {
 
 	mvu = cheri_setbounds(cheri_setaddress(kdc, mva), PAGE_SIZE);
 
+	rw_wlock(&analysis_lock);
 	printf("CP analysis: Faulting address %lx, faulting page %lx\n",		
 			fs->actual_vaddr, fs->vaddr);
 	
@@ -503,7 +511,7 @@ static int vm_cheri_readahead(struct faultstate *fs) {
 					vaddr, count);
 		}
 	}
-
+	rw_wunlock(&analysis_lock);
 	return 0;
 }
 

@@ -498,6 +498,16 @@ static int vm_cheri_readahead(struct faultstate *fs) {
 	mvu = cheri_setbounds(cheri_setaddress(kdc, mva), PAGE_SIZE);
 
 	rw_wlock(&analysis_lock);
+	PROC_LOCK(curproc);
+	vm_pindex_t limit, size;
+	struct rlimit rsslim;
+	lim_rlimit_proc(curproc, RLIMIT_RSS, &rsslim);
+	
+	limit = OFF_TO_IDX(
+			qmin(rsslim.rlim_cur, rsslim.rlim_max));
+	printf("PID: %d, limit %lu\n", curproc->p_pid, limit);
+	PROC_UNLOCK(curproc);
+	
 	printf("CP analysis: Faulting address %lx, faulting page %lx\n",		
 			fs->actual_vaddr, fs->vaddr);
 	

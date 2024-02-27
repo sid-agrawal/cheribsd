@@ -499,7 +499,7 @@ static int vm_cheri_readahead(struct faultstate *fs) {
 
 	rw_wlock(&analysis_lock);
 	PROC_LOCK(curproc);
-	vm_pindex_t limit, size;
+	vm_pindex_t limit;
 	struct rlimit rsslim;
 	lim_rlimit_proc(curproc, RLIMIT_RSS, &rsslim);
 	

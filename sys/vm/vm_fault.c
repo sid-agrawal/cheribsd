@@ -512,6 +512,7 @@ static int vm_cheri_readahead(struct faultstate *fs) {
 	 */
 	if (limit > 65536) {
 		PROC_UNLOCK(curproc);
+		rw_wunlock(&analysis_lock);
 		return 0;
 	}
 	

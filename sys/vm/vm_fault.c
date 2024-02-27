@@ -512,7 +512,7 @@ static int vm_cheri_readahead(struct faultstate *fs) {
 	 */
 	if (limit == RLIM_INFINITY) {
 		PROC_UNLOCK(curproc);
-		return;
+		return 0;
 	}
 	
 	PROC_UNLOCK(curproc);

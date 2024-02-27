@@ -506,8 +506,16 @@ static int vm_cheri_readahead(struct faultstate *fs) {
 	limit = OFF_TO_IDX(
 			qmin(rsslim.rlim_cur, rsslim.rlim_max));
 	printf("PID: %d, limit %lu\n", curproc->p_pid, limit);
-	PROC_UNLOCK(curproc);
+	/*
+	 * Filter out processes that don't have a limit.
+	 * This is basically a way of constraining what process CP runs for.
+	 */
+	if (limit == RLIM_INFINITY) {
+		PROC_UNLOCK(curproc);
+		return;
+	}
 	
+	PROC_UNLOCK(curproc);
 	printf("CP analysis: Faulting address %lx, faulting page %lx\n",		
 			fs->actual_vaddr, fs->vaddr);
 	

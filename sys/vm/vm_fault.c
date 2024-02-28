@@ -489,8 +489,29 @@ static int vm_cheri_readahead(struct faultstate *fs) {
 	void * __capability kdc = swap_restore_cap; 
 
 
+
 	if (!fs->m)
 		return FAULT_FAILURE;
+	
+	PROC_LOCK(curproc);
+	vm_pindex_t limit; 
+	struct rlimit rsslim; 
+	lim_rlimit_proc(curproc, RLIMIT_RSS, &rsslim);
+
+	limit = OFF_TO_IDX(
+			qmin(rsslim.rlim_cur, rsslim.rlim_max));
+
+	/*
+	 * XXX: Hack, we use this to make sure that we only
+	 * run CP for our process but surely there is a better
+	 * way to do it.
+	 */
+	if (limit > 65536) { 
+		PROC_UNLOCK(curproc);
+		return 0;
+	}
+
+	PROC_UNLOCK(curproc);
 	//printf("Is process killed %d\n", P_KILLED(curproc));
 	mva = PHYS_TO_DMAP(VM_PAGE_TO_PHYS(fs->m));
 	mve = mva + PAGE_SIZE; 

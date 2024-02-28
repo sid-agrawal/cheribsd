@@ -505,7 +505,6 @@ static int vm_cheri_readahead(struct faultstate *fs) {
 	
 	limit = OFF_TO_IDX(
 			qmin(rsslim.rlim_cur, rsslim.rlim_max));
-	printf("PID: %d, limit %lu\n", curproc->p_pid, limit);
 	/*
 	 * Filter out processes that don't have a limit.
 	 * This is basically a way of constraining what process CP runs for.
@@ -517,16 +516,18 @@ static int vm_cheri_readahead(struct faultstate *fs) {
 	}
 	
 	PROC_UNLOCK(curproc);
-	printf("CP analysis: Faulting address %lx, faulting page %lx\n",		
+	
+	LOG(LOG_DEBUG, "PID: %d, limit %lu\n", curproc->p_pid, limit);
+	LOG(LOG_DEBUG, "CP analysis: Faulting address %lx, faulting page %lx\n",		
 			fs->actual_vaddr, fs->vaddr);
 	
-	printf("PC: %lx\n", fs->pc);
+	LOG(LOG_DEBUG, "PC: %lx\n", fs->pc);
 	int count = 0;
 	for(; cheri_getaddress(mvu) < mve; mvu++) {
 		++count;
 		if(cheri_gettag(*mvu)) {
 			vm_offset_t vaddr = cheri_getaddress(*mvu);
-			printf("CP analysis: Address is %lx, offset is %d\n", 
+			LOG(LOG_DEBUG, "CP analysis: Address is %lx, offset is %d\n", 
 					vaddr, count);
 		}
 	}

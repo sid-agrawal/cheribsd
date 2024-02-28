@@ -2054,13 +2054,14 @@ again:
 			// trying to access something from swap, daemon checks 
 			// pip at the level of vm_object.
 			if (size > limit) {
-				// printf("Size exceeded pid: %d, size %lu, limit %lu\n"
-				//  		, curproc->p_pid, size, limit);
+				//printf("Size exceeded regular pid: %d, size %lu, limit %lu\n"
+				// 		, curproc->p_pid, size, limit);
 				// Wakeup vm_daemon to support our emergency.
 				PROC_UNLOCK(curproc);
 				vm_swapout_run();
 				return NULL;
-			}
+			} else if (size > (limit - 512))
+				vm_swapout_run(); // nudge swapout.
 		}
 	}
 	PROC_UNLOCK(curproc);
@@ -2290,8 +2291,8 @@ vm_page_alloc_contig_domain(vm_object_t object, vm_pindex_t pindex, int domain,
 			// trying to access something from swap, daemon checks 
 			// pip at the level of vm_object.
 			if (size + npages > limit) {
-				// printf("Size exceeded pid: %d, size %lu, limit %lu\n"
-				//  		, curproc->p_pid, size, limit);
+				printf("Size exceeded in contig pid: %d, size %lu, limit %lu\n"
+				  		, curproc->p_pid, size, limit);
 				// Wakeup vm_daemon to support our emergency.
 				PROC_UNLOCK(curproc);
 				vm_swapout_run();

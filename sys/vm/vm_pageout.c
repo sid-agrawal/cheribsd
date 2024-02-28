@@ -1777,7 +1777,7 @@ vm_pageout_inactive(struct vm_domain *vmd, int shortage, int *addl_shortage)
 	 * If the inactive queue scan fails repeatedly to meet its
 	 * target, kill the largest process.
 	 */
-	vm_pageout_mightbe_oom(vmd, page_shortage, starting_page_shortage);
+	// vm_pageout_mightbe_oom(vmd, page_shortage, starting_page_shortage);
 
 	/*
 	 * Reclaim pages by swapping out idle processes, if configured to do so.

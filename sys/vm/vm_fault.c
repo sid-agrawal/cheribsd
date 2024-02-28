@@ -517,17 +517,17 @@ static int vm_cheri_readahead(struct faultstate *fs) {
 	
 	PROC_UNLOCK(curproc);
 	
-	LOG(LOG_DEBUG, "PID: %d, limit %lu\n", curproc->p_pid, limit);
-	LOG(LOG_DEBUG, "CP analysis: Faulting address %lx, faulting page %lx\n",		
+	printf("PID: %d, limit %lu\n", curproc->p_pid, limit);
+	printf("CP analysis: Faulting address %lx, faulting page %lx\n",		
 			fs->actual_vaddr, fs->vaddr);
 	
-	LOG(LOG_DEBUG, "PC: %lx\n", fs->pc);
+	printf("PC: %lx\n", fs->pc);
 	int count = 0;
 	for(; cheri_getaddress(mvu) < mve; mvu++) {
 		++count;
 		if(cheri_gettag(*mvu)) {
 			vm_offset_t vaddr = cheri_getaddress(*mvu);
-			LOG(LOG_DEBUG, "CP analysis: Address is %lx, offset is %d\n", 
+			printf("CP analysis: Address is %lx, offset is %d\n", 
 					vaddr, count);
 		}
 	}

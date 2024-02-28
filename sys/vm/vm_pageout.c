@@ -145,8 +145,8 @@ SDT_PROVIDER_DEFINE(vm);
 SDT_PROBE_DEFINE(vm, , , vm__lowmem_scan);
 
 /* Pagedaemon activity rates, in subdivisions of one second. */
-#define	VM_LAUNDER_RATE		10
-#define	VM_INACT_SCAN_RATE	10
+#define	VM_LAUNDER_RATE		2
+#define	VM_INACT_SCAN_RATE	2
 
 static int swapdev_enabled;
 int vm_pageout_page_count = 32;

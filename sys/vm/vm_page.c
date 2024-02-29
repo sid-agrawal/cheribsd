@@ -2059,6 +2059,10 @@ again:
 				// Wakeup vm_daemon to support our emergency.
 				PROC_UNLOCK(curproc);
 				vm_swapout_run();
+				
+				VM_OBJECT_WUNLOCK(object);
+				pause("allocwait", hz / 1000);
+				VM_OBJECT_LOCK(object);
 				return NULL;
 			} else if (size > (limit - 512))
 				vm_swapout_run(); // nudge swapout.
@@ -3458,6 +3462,7 @@ vm_waitpfault(struct domainset *dset, int timo)
 	 * consume all freed pages while old allocators wait.
 	 */
 	mtx_lock(&vm_domainset_lock);
+
 	if (vm_page_count_min_set(&dset->ds_mask)) {
 		vm_min_waiters++;
 		msleep(&vm_min_domains, &vm_domainset_lock, PUSER | PDROP,

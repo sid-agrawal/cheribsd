@@ -1480,7 +1480,7 @@ vm_fault_allocate(struct faultstate *fs)
 		    P_KILLED(curproc) ? VM_ALLOC_SYSTEM : 0);
 	}
 	if (fs->m == NULL) {
-		if (vm_fault_allocate_oom(fs))
+		if (vm_fault_allocate_oom(fs) || true)
 			vm_waitpfault(dset, vm_pfault_oom_wait * hz); 
 		return (FAULT_RESTART);
 	}

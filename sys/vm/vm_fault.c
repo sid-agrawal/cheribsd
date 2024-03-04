@@ -366,9 +366,9 @@ vm_fault_dirty(struct faultstate *fs, vm_page_t m)
 }
 
 /*
- * Allocate and update the pc data cache. 
+ * Allocate and update the pc data cache.
  * We return the address and the value can be modified by the caller.
- * Appropriate locking is necessary.
+ * Appropriate locking on the return value is necessary.
  */
 static struct pc_data * check_or_allocate_pc_data(uint64_t pc) {
 
@@ -382,14 +382,14 @@ static struct pc_data * check_or_allocate_pc_data(uint64_t pc) {
 			return &pc_data_cache[i];
 		}
 	}
-	// XXX: maybe this unlock can be avoided.
-	rw_wunlock(&pc_data_lock);
-	if (curr_pc_data >= 1024) 
+	
+	if (curr_pc_data >= 1024) {
+		rw_wunlock(&pc_data_lock);
 		return NULL;
+	}
 
 	// rw_init(&(pc_data_cache[curr_pc_data].lock), "pc_cache_lock");
 	// PC_DATA_WLOCK(pc_data_cache[curr_pc_data]);
-	rw_wlock(&pc_data_lock);
 	pc_data_cache[curr_pc_data].pc = pc;
 	pc_data_cache[curr_pc_data].prev_prefetch_count = 1;
 	pc_data_cache[curr_pc_data].curr_window_count = 0;
@@ -404,7 +404,7 @@ static struct pc_data * check_or_allocate_pc_data(uint64_t pc) {
 static void print_pc_data_cache(int pc_to_print) {
 	for(int i =pc_to_print; i < pc_to_print + 1; i++) {
 		printf("PC: %lx, prefetches: %lu, hits: %lu\n", 
-				pc_data_cache[i].pc, 
+				pc_data_cache[i].pc,
 				pc_data_cache[i].prev_prefetch_count,
 				pc_data_cache[i].total_hits);
 	}
@@ -424,7 +424,7 @@ static bool update_pc_hits(uint64_t pc) {
 			print_pc_data_cache(i);
 			//PC_DATA_WUNLOCK(pc_data_cache[curr_pc_data]);
 			rw_wunlock(&pc_data_lock);
-			return true; 
+			return true;
 		}
 	}
 	rw_wunlock(&pc_data_lock);
@@ -1586,7 +1586,7 @@ vm_fault_allocate(struct faultstate *fs)
 		    P_KILLED(curproc) ? VM_ALLOC_SYSTEM : 0);
 	}
 	if (fs->m == NULL) {
-		if (vm_fault_allocate_oom(fs))
+		if (vm_fault_allocate_oom(fs) || true)
 			vm_waitpfault(dset, vm_pfault_oom_wait * hz); 
 		return (FAULT_RESTART);
 	}

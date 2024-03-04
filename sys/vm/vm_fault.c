@@ -531,6 +531,10 @@ static int vm_cheri_readahead(struct faultstate *fs) {
 					vaddr, count);
 		}
 	}
+
+	printf("\n");
+	
+	// TODO(shaurp): Probably need to flush here.
 	rw_wunlock(&analysis_lock);
 	return 0;
 }

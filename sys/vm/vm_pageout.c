@@ -145,8 +145,8 @@ SDT_PROVIDER_DEFINE(vm);
 SDT_PROBE_DEFINE(vm, , , vm__lowmem_scan);
 
 /* Pagedaemon activity rates, in subdivisions of one second. */
-#define	VM_LAUNDER_RATE		10
-#define	VM_INACT_SCAN_RATE	10
+#define	VM_LAUNDER_RATE		2
+#define	VM_INACT_SCAN_RATE	2
 
 static int swapdev_enabled;
 int vm_pageout_page_count = 32;
@@ -1779,7 +1779,7 @@ vm_pageout_inactive(struct vm_domain *vmd, int shortage, int *addl_shortage)
 	 * If the inactive queue scan fails repeatedly to meet its
 	 * target, kill the largest process.
 	 */
-	vm_pageout_mightbe_oom(vmd, page_shortage, starting_page_shortage);
+	// vm_pageout_mightbe_oom(vmd, page_shortage, starting_page_shortage);
 
 	/*
 	 * Reclaim pages by swapping out idle processes, if configured to do so.
@@ -1839,7 +1839,7 @@ vm_pageout_mightbe_oom(struct vm_domain *vmd, int page_shortage,
 	 * start OOM.  Initiate the selection and signaling of the
 	 * victim.
 	 */
-	// vm_pageout_oom(VM_OOM_MEM);
+	vm_pageout_oom(VM_OOM_MEM);
 
 	/*
 	 * After one round of OOM terror, recall our vote.  On the

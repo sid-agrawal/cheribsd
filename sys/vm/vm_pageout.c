@@ -1839,7 +1839,7 @@ vm_pageout_mightbe_oom(struct vm_domain *vmd, int page_shortage,
 	 * start OOM.  Initiate the selection and signaling of the
 	 * victim.
 	 */
-	vm_pageout_oom(VM_OOM_MEM);
+	// vm_pageout_oom(VM_OOM_MEM);
 
 	/*
 	 * After one round of OOM terror, recall our vote.  On the

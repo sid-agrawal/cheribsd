@@ -1110,7 +1110,8 @@ dolaundry:
 			 */
 			target -= min(vm_pageout_launder(vmd, launder,
 			    in_shortfall), target);
-			update_deactivated_pages(-1 * target);
+			if (curr_deactivated_pages > 0)
+				update_deactivated_pages(-1 * target);
 			pause("laundp", hz / VM_LAUNDER_RATE);
 		}
 

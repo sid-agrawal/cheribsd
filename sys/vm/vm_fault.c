@@ -494,8 +494,8 @@ static int vm_cheri_readahead(struct faultstate *fs) {
 		return FAULT_FAILURE;
 	
 	PROC_LOCK(curproc);
-	vm_pindex_t limit; 
-	struct rlimit rsslim; 
+	vm_pindex_t limit;
+	struct rlimit rsslim;
 	lim_rlimit_proc(curproc, RLIMIT_RSS, &rsslim);
 
 	limit = OFF_TO_IDX(
@@ -506,7 +506,7 @@ static int vm_cheri_readahead(struct faultstate *fs) {
 	 * run CP for our process but surely there is a better
 	 * way to do it.
 	 */
-	if (limit > 65536) { 
+	if (limit > 131072) {
 		PROC_UNLOCK(curproc);
 		return 0;
 	}
@@ -528,20 +528,20 @@ static int vm_cheri_readahead(struct faultstate *fs) {
 		if(cheri_gettag(*mvu)) {
 			vm_offset_t vaddr = cheri_getaddress(*mvu);
 			// Give the default prefetcher a chance to run.
-			if (trunc_page(vaddr) == 
-					fs->vaddr || 
+			if (trunc_page(vaddr) ==
+					fs->vaddr ||
 					trunc_page(vaddr) == fs->vaddr + 4096)
 				continue;
 			// TODO(shaurp): Check if the page is already prefetched
-			vm_object_t obj; 
+			vm_object_t obj;
 			vm_pindex_t pindex;
-			vm_map_entry_t entry; 
-			vm_prot_t prot; 
+			vm_map_entry_t entry;
+			vm_prot_t prot;
 			boolean_t wired;
 			// printf("Calling map lookup\n");
-			int result = vm_map_lookup_prefetch(&fs->map, 
+			int result = vm_map_lookup_prefetch(&fs->map,
 					trunc_page(vaddr)
-					, VM_PROT_READ, &entry, &obj, 
+					, VM_PROT_READ, &entry, &obj,
 					&pindex, &prot, &wired);
 			
 			

@@ -538,7 +538,6 @@ again:
 				//		initial_size - size);
 			}
 
-			wakeup(&vmd->vmd_pageout_wanted);
 #ifdef RACCT
 			if (racct_enable) {
 				rsize = IDX_TO_OFF(size);

@@ -2304,7 +2304,7 @@ vm_page_alloc_contig_domain(vm_object_t object, vm_pindex_t pindex, int domain,
                        // TODO(shaurp): Do we have a deadlock here if we are
                        // trying to access something from swap, daemon checks
                        // pip at the level of vm_object.
-                       if (size + npages > limit) {
+                       if (size + npages > limit || get_deactivated_pages() > 0) {
                                printf("Size exceeded in contig pid: %d, size %lu, limit %lu\n"
                                                , curproc->p_pid, size, limit);
                                // Wakeup vm_daemon to support our emergency.

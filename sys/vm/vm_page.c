@@ -2062,7 +2062,7 @@ again:
 			// TODO(shaurp): Do we have a deadlock here if we are
 			// trying to access something from swap, daemon checks 
 			// pip at the level of vm_object.
-			if (size > limit) {
+			if (size > limit || get_deactivated_pages() > 0) {
 				// printf("Size exceeded pid: %d, size %lu, limit %lu\n"
 				// 		, curproc->p_pid, size, limit);
 				// Wakeup vm_daemon to support our emergency.
@@ -2073,7 +2073,7 @@ again:
 				pause("allocwait", hz / 1000);
 				VM_OBJECT_WLOCK(object);
 				return NULL;
-			} 
+			}
 			/* else if (size > (limit - 512))
 				vm_swapout_run(); // nudge swapout */
 		}

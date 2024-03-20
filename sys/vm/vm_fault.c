@@ -527,9 +527,41 @@ static int vm_cheri_readahead(struct faultstate *fs) {
 		++count;
 		if(cheri_gettag(*mvu)) {
 			vm_offset_t vaddr = cheri_getaddress(*mvu);
-			printf("CP analysis: Address is %lx, offset is %d\n", 
+			printf("CP analysis: Address is %lx, offset is %d", 
 					vaddr, count);
 		}
+		/*
+		Future feature to check whether page is already in memory.
+		I don't know a good way of doing this where we don't cause a
+		deadlock yet.
+		vm_object_t obj;
+		vm_pindex_t pindex;
+		vm_map_entry_t entry;
+		vm_prot_t prot;
+		boolean_t wired;
+		// printf("Calling map lookup\n");
+		int result = vm_map_lookup_prefetch(&fs->map,
+				trunc_page(vaddr)
+				, VM_PROT_READ, &entry, &obj,
+		`		&pindex, &prot, &wired);
+		
+		
+		if (result != KERN_SUCCESS) {
+			continue;
+		}
+		// XXX: In case of concurrent pagefaults this can cause a
+		// deadlock. How do we solve that?	
+		VM_OBJECT_WLOCK(obj);	
+		vm_page_t p;
+		p = vm_page_lookup(obj, pindex);
+		if (p != NULL) {
+			// This might also be because we already
+			// prefetched the pointer.
+			printf("Present: 1\n");
+		} else {
+			printf("Present: 0\n");	
+		}
+		VM_OBJECT_WUNLOCK(obj);	*/
 	}
 
 	printf("\n");

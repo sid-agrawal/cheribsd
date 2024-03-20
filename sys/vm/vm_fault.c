@@ -1591,7 +1591,7 @@ vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
 	behind = 0; 
 	ahead = 0; 
 	if (fs->nera == -1 || behavior == MAP_ENTRY_BEHAV_RANDOM ||
-	    P_KILLED(curproc)) {
+	    P_KILLED(curproc) || vm_cnt.v_cheri_prefetch==1 ) {
 		behind = 0;
 		ahead = 0;
 	} else {

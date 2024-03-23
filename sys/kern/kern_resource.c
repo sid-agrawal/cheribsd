@@ -691,6 +691,9 @@ kern_proc_setrlimit(struct thread *td, struct proc *p, u_int which,
 	oldssiz.rlim_cur = 0;
 	newlim = lim_alloc();
 	PROC_LOCK(p);
+	if (which == RLIMIT_RSS) {
+		printf("Proc %d, lim %d\n", p->p_pid, limp->rlim_max);
+	}
 	oldlim = p->p_limit;
 	alimp = &oldlim->pl_rlimit[which];
 	if (limp->rlim_cur > alimp->rlim_max ||

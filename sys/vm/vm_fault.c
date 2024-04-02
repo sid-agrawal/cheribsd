@@ -1588,7 +1588,12 @@ vm_fault_allocate(struct faultstate *fs)
 	}
 	if (fs->m == NULL) {
 		if (vm_fault_allocate_oom(fs) || true)
-			vm_waitpfault(dset, vm_pfault_oom_wait * hz); 
+			vm_waitpfault(dset, vm_pfault_oom_wait * hz);
+
+		// Pause the thread.
+		// XXX (shaurp): Make this better by tracking if the fault
+		// restarted because of memory full issue.
+		pause("allocwait", hz / 1000);
 		return (FAULT_RESTART);
 	}
 	fs->oom_started = false;

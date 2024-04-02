@@ -2057,12 +2057,11 @@ again:
 				//printf("Size exceeded regular pid: %d, size %lu, limit %lu\n"
 				// 		, curproc->p_pid, size, limit);
 				// Wakeup vm_daemon to support our emergency.
-				PROC_UNLOCK(curproc);
-				vm_swapout_run();
-				
-				VM_OBJECT_WUNLOCK(object);
-				pause("allocwait", hz / 1000);
-				VM_OBJECT_WLOCK(object);
+				// PROC_UNLOCK(curproc);
+				vm_swapout_run();	
+				// VM_OBJECT_WUNLOCK(object);
+				// pause("allocwait", hz / 1000);
+				// VM_OBJECT_WLOCK(object);
 				return NULL;
 			} else if (size > (limit - 128))
 				vm_swapout_run(); // nudge swapout.

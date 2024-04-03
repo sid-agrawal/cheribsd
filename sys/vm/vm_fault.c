@@ -1522,6 +1522,7 @@ vm_fault_allocate(struct faultstate *fs)
 		// Pause the thread.
 		// XXX (shaurp): Make this better by tracking if the fault
 		// restarted because of memory full issue.
+		vm_swapout_run();
 		pause("allocwait", hz / 1000);
 		return (FAULT_RESTART);
 	}

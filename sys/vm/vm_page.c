@@ -1926,7 +1926,7 @@ vm_page_alloc_domain(vm_object_t object, vm_pindex_t pindex, int domain,
 	return (vm_page_alloc_domain_after(object, pindex, domain, req,
 	    vm_radix_lookup_le(&object->rtree, pindex)));
 }
-static int check_page_limit() {
+static int check_page_limit(vm_object_t object) {
 	PROC_LOCK(curproc);
 	if (!(curproc->p_state != PRS_NORMAL ||
 			curproc->p_flag & (P_INEXEC | P_SYSTEM | P_WEXIT))) {
@@ -1975,7 +1975,7 @@ vm_page_alloc_after(vm_object_t object, vm_pindex_t pindex,
 	struct vm_domainset_iter di;
 	vm_page_t m;
 	int domain;
-	int over_limit = check_page_limit();
+	int over_limit = check_page_limit(object);
 	if (over_limit)
 		return NULL;
 	vm_domainset_iter_page_init(&di, object, pindex, &domain, &req);

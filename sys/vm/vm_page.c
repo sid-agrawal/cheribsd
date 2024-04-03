@@ -1926,6 +1926,40 @@ vm_page_alloc_domain(vm_object_t object, vm_pindex_t pindex, int domain,
 	return (vm_page_alloc_domain_after(object, pindex, domain, req,
 	    vm_radix_lookup_le(&object->rtree, pindex)));
 }
+static int check_page_limit() {
+	PROC_LOCK(curproc);
+	if (!(curproc->p_state != PRS_NORMAL ||
+			curproc->p_flag & (P_INEXEC | P_SYSTEM | P_WEXIT))) {
+		vm_pindex_t limit, size;
+		struct rlimit rsslim;
+		lim_rlimit_proc(curproc, RLIMIT_RSS, &rsslim);
+		
+		limit = OFF_TO_IDX(
+				qmin(rsslim.rlim_cur, rsslim.rlim_max));
+		if (curproc->p_vmspace != NULL) {
+			size = vmspace_resident_count(curproc->p_vmspace);
+
+			// TODO(shaurp): Do we have a deadlock here if we are
+			// trying to access something from swap, daemon checks 
+			// pip at the level of vm_object.
+			if (size > limit) {
+				//printf("Size exceeded regular pid: %d, size %lu, limit %lu\n"
+				// 		, curproc->p_pid, size, limit);
+				// Wakeup vm_daemon to support our emergency.
+				PROC_UNLOCK(curproc);
+				vm_swapout_run();	
+				VM_OBJECT_WUNLOCK(object);
+				pause("allocwait", hz / 1000);
+				VM_OBJECT_WLOCK(object);
+				return -ENOMEM;
+			} else if (size > (limit - 128))
+				vm_swapout_run(); // nudge swapout.
+		}
+	}
+	PROC_UNLOCK(curproc);
+	return 0;
+
+}
 
 /*
  * Allocate a page in the specified object with the given page index.  To
@@ -1941,7 +1975,9 @@ vm_page_alloc_after(vm_object_t object, vm_pindex_t pindex,
 	struct vm_domainset_iter di;
 	vm_page_t m;
 	int domain;
-
+	int over_limit = check_page_limit();
+	if (over_limit)
+		return NULL;
 	vm_domainset_iter_page_init(&di, object, pindex, &domain, &req);
 	do {
 		m = vm_page_alloc_domain_after(object, pindex, domain, req,

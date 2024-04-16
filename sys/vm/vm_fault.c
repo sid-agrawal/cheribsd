@@ -559,9 +559,10 @@ static int vm_cheri_readahead(struct faultstate *fs) {
 			printf("Present: 0\n");	
 		}
 		VM_OBJECT_WUNLOCK(obj);	
-		}
+		
+	
+		vm_map_lookup_done(fs->map, entry);	
 	}
-
 	printf("\n");
 	
 	// TODO(shaurp): Probably need to flush here.

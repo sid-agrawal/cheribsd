@@ -531,37 +531,38 @@ static int vm_cheri_readahead(struct faultstate *fs) {
 					vaddr, count);
 		
 		
-		vm_object_t obj;
-		vm_pindex_t pindex;
-		vm_map_entry_t entry;
-		vm_prot_t prot;
-		boolean_t wired;
-		// printf("Calling map lookup\n");
-		int result = vm_map_lookup_prefetch(&fs->map,
-				trunc_page(vaddr)
-				, VM_PROT_READ, &entry, &obj,
-				&pindex, &prot, &wired);
+			vm_object_t obj;
+			vm_pindex_t pindex;
+			vm_map_entry_t entry;
+			vm_prot_t prot;
+			boolean_t wired;
+			// printf("Calling map lookup\n");
+			int result = vm_map_lookup_prefetch(&fs->map,
+					trunc_page(vaddr)
+					, VM_PROT_READ, &entry, &obj,
+					&pindex, &prot, &wired);
+			
+			
+			if (result != KERN_SUCCESS) {
+				continue;
+			}
+			// XXX: In case of concurrent pagefaults this can cause a
+			// deadlock. How do we solve that?	
+			VM_OBJECT_WLOCK(obj);	
+			vm_page_t p;
+			p = vm_page_lookup(obj, pindex);
+			if (p != NULL) {
+				// This might also be because we already
+				// prefetched the pointer.
+				printf("Present: 1\n");
+			} else {
+				printf("Present: 0\n");	
+			}
+			VM_OBJECT_WUNLOCK(obj);	
+			
 		
-		
-		if (result != KERN_SUCCESS) {
-			continue;
+			vm_map_lookup_done(fs->map, entry);
 		}
-		// XXX: In case of concurrent pagefaults this can cause a
-		// deadlock. How do we solve that?	
-		VM_OBJECT_WLOCK(obj);	
-		vm_page_t p;
-		p = vm_page_lookup(obj, pindex);
-		if (p != NULL) {
-			// This might also be because we already
-			// prefetched the pointer.
-			printf("Present: 1\n");
-		} else {
-			printf("Present: 0\n");	
-		}
-		VM_OBJECT_WUNLOCK(obj);	
-		
-	
-		vm_map_lookup_done(fs->map, entry);	
 	}
 	printf("\n");
 	

@@ -529,7 +529,7 @@ static int vm_cheri_readahead(struct faultstate *fs) {
 			vm_offset_t vaddr = cheri_getaddress(*mvu);
 			printf("CP analysis: Address is %lx, offset is %d,", 
 					vaddr, count);
-		}
+		
 		
 		vm_object_t obj;
 		vm_pindex_t pindex;
@@ -559,6 +559,7 @@ static int vm_cheri_readahead(struct faultstate *fs) {
 			printf("Present: 0\n");	
 		}
 		VM_OBJECT_WUNLOCK(obj);	
+		}
 	}
 
 	printf("\n");

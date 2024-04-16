@@ -519,6 +519,7 @@ static int vm_cheri_readahead(struct faultstate *fs) {
 	// KASSERT(!(fs->actual_vaddr - fs->vaddr) > PAGE_SIZE);
 	mvu = cheri_setbounds(cheri_setaddress(kdc, mva), PAGE_SIZE);
 	offset = (fs->actual_vaddr - fs->vaddr);
+	// TODO(shaurp): Is this correct or are we going over?
 	offset = offset >> 7;
 	mvu += offset;
 	//KASSERT(mvu <= mve, ("checking address cannot be greater than 

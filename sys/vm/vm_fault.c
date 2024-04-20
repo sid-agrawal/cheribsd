@@ -509,7 +509,7 @@ static int vm_cheri_readahead(struct faultstate *fs) {
 	 * Filter out processes that don't have a limit.
 	 * This is basically a way of constraining what process CP runs for.
 	 */
-	if (limit > 65536) {
+	if (limit > 262144) {
 		PROC_UNLOCK(curproc);
 		rw_wunlock(&analysis_lock);
 		return 0;

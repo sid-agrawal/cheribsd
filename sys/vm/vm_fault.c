@@ -506,7 +506,7 @@ static int vm_cheri_readahead(struct faultstate *fs) {
 	 * run CP for our process but surely there is a better
 	 * way to do it.
 	 */
-	if (limit > 131072) {
+	if (limit > 300000) {
 		PROC_UNLOCK(curproc);
 		return 0;
 	}

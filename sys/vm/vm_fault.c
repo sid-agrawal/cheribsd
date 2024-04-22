@@ -527,7 +527,7 @@ static int vm_cheri_readahead(struct faultstate *fs) {
 		++count;
 		if(cheri_gettag(*mvu)) {
 			vm_offset_t vaddr = cheri_getaddress(*mvu);
-			printf("CP analysis: Address is %lx, offset is %d,", 
+			printf("CP analysis: Address is %lx, offset is %d, ",
 					vaddr, count);
 		
 		
@@ -544,6 +544,9 @@ static int vm_cheri_readahead(struct faultstate *fs) {
 			
 			
 			if (result != KERN_SUCCESS) {
+				// Assuming here that it wasn't present
+				// But is it also not prefetchable.
+				printf("Present: 0\n");	
 				continue;
 			}
 			// XXX: In case of concurrent pagefaults this can cause a

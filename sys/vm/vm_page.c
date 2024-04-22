@@ -2109,7 +2109,7 @@ again:
 				// VM_OBJECT_WLOCK(object);
 				return NULL;
 			}
-			/* else if (size > (limit - 512))
+			else if (size > (limit - 128))
 				vm_swapout_run(); // nudge swapout */
 		}
 	}

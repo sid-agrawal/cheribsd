@@ -183,6 +183,10 @@ struct swblk {
 	vm_pindex_t	p;
 #if __has_feature(capabilities)
 	tag_word_t	t[SWAP_META_PAGES][TAG_WORDS_PER_PAGE];
+	// TODO(joshua): #1 Add another datastructure here.
+	// It has the same x as the previous struct, except the 2d part
+	// Needs to contain pointer_values along with their offsets.
+	// Something like t[SWAP_META_PAGES][2d_ptr_arr]
 #endif
 	daddr_t		d[SWAP_META_PAGES];
 };
@@ -2494,7 +2498,8 @@ swp_pager_meta_cheri_get_tags(vm_page_t page)
 		scan += 8 * sizeof(tag_word_t);
 	}
 }
-
+// TODO(joshua): #2 Add code here to populate the new pointer struct
+// with the actual values of the pointers when you are doing this loop.
 /*
  *	swp_pager_meta_cheri_put_tags:
  *

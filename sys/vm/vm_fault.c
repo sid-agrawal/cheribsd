@@ -524,6 +524,8 @@ static int vm_cheri_readahead(struct faultstate *fs) {
 	mvu += offset;
 	//KASSERT(mvu <= mve, ("checking address cannot be greater than 
 	// 		page size"));
+	// TODO(joshua): #3 Read the ptr values from your struct here 
+	// and use those instead for prefetching.
 	int count = 0;
 	for(; cheri_getaddress(mvu) < mve && count < 1; mvu++) {
 		if(cheri_gettag(*mvu)) {
@@ -1714,6 +1716,8 @@ vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
 		
 		struct timespec start, end; 
 		nanotime(&start);
+		// TODO(joshua): #4 Once the entire pipeline works, move this 
+		// to before the currently faulted page is sent.
 		vm_cheri_readahead(fs);
 		nanotime(&end);
 		unsigned long long elapsed = (end.tv_sec - start.tv_sec) * (10000000) + (end.tv_nsec - start.tv_nsec);

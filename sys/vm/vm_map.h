@@ -209,6 +209,7 @@ struct vm_map {
 	struct mtx system_mtx;
 	int nentries;			/* Number of entries */
 	vm_size_t size;			/* virtual size */
+	uint64_t active_prefetched_pages; /* Number of reside prefetched pages*/
 	u_int timestamp;		/* Version number */
 	u_char needs_wakeup;
 	u_char system_map;		/* (c) Am I a system map? */

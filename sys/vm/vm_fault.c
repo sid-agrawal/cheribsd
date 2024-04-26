@@ -577,6 +577,9 @@ static int vm_cheri_readahead(struct faultstate *fs) {
 					p->pc = fs->pc;
 					// Allocate or check per PC data.
 					check_or_allocate_pc_data(fs->pc);
+					// Increase the number of active 
+					// prefetched pages.
+					fs->map->active_prefetched_pages++;
 					/* if (fs->vaddr + PAGE_SIZE == vaddr) 
 						fs->entry->next_read = vaddr 
 						+ PAGE_SIZE;

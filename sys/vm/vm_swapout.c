@@ -177,7 +177,7 @@ static int last_swapin;
 static void swapclear(struct proc *);
 static int swapout(struct proc *);
 static void vm_swapout_map_deactivate_pages(vm_map_t, long);
-static void vm_swapout_object_deactivate(pmap_t, vm_object_t, long);
+static void vm_swapout_object_deactivate(vm_map_t,pmap_t, vm_object_t, long);
 static void swapout_procs(int action);
 static void vm_req_vmdaemon(int req);
 static void vm_thread_swapout(struct thread *td);
@@ -214,7 +214,7 @@ int get_deactivated_pages() {
 
 
 static void
-vm_swapout_object_deactivate_page(pmap_t pmap, vm_page_t m, bool unmap)
+vm_swapout_object_deactivate_page(vm_map_t map, pmap_t pmap, vm_page_t m, bool unmap)
 {
 
 	
@@ -236,10 +236,26 @@ vm_swapout_object_deactivate_page(pmap_t pmap, vm_page_t m, bool unmap)
 			(void)vm_page_try_remove_all(m);
 			// deactivated_pages++;
 			update_deactivated_pages(1);
+			// TODO(shaurp): Track if this page was prefetched.
+			// Update a counter in that case.
+			if (m->prefetched != 0) {
+				// This was a prefetched page.
+				// Update a counter.
+				// Assume that on mapping a page, the
+				// prefetched bit would be reset.
+				map->active_prefetched_pages--;	
+			}
 		} else if (unmap && vm_page_try_remove_all(m)) {
 			vm_page_deactivate(m);
 			// deactivated_pages++;
 			update_deactivated_pages(1);
+			
+			if (m->prefetched != 0) {
+				// Same thing as above	
+				// TODO(shaurp): Make sure you implement this
+				// as a map procedure.
+				map->active_prefetched_pages--;
+			}
 		}
 
 	}
@@ -256,7 +272,7 @@ vm_swapout_object_deactivate_page(pmap_t pmap, vm_page_t m, bool unmap)
  *	The object and map must be locked.
  */
 static void
-vm_swapout_object_deactivate(pmap_t pmap, vm_object_t first_object,
+vm_swapout_object_deactivate(vm_map_t map, pmap_t pmap, vm_object_t first_object,
     long desired)
 {
 	vm_object_t backing_object, object;
@@ -272,7 +288,7 @@ vm_swapout_object_deactivate(pmap_t pmap, vm_object_t first_object,
 		VM_OBJECT_ASSERT_LOCKED(object);
 		/*
 		 * XXX: do we really need to check for pip here?
-		 * This might significantly slow things down. 
+		 * This might significantly slow things down.
 		*/
 		if ((object->flags & OBJ_UNMANAGED) != 0 ||
 			  blockcount_read(&object->paging_in_progress) > 0) {	
@@ -287,9 +303,11 @@ vm_swapout_object_deactivate(pmap_t pmap, vm_object_t first_object,
 		 * Scan the object's entire memory queue.
 		 */
 		TAILQ_FOREACH(m, &object->memq, listq) {
+			// TODO(shaurp): Why are they searching for pmap
+			// count here instead of vmspace?
 			if (pmap_resident_count(pmap) < desired)
 				goto unlock_return;
-			vm_swapout_object_deactivate_page(pmap, m, unmap);
+			vm_swapout_object_deactivate_page(map, pmap, m, unmap);
 			/* if (should_yield())
 				goto unlock_return; */
 			// vm_swapout_object_deactivate_page(pmap, m, unmap);
@@ -346,7 +364,7 @@ vm_swapout_map_deactivate_pages(vm_map_t map, long desired)
 	}
 
 	if (bigobj != NULL) {
-		vm_swapout_object_deactivate(map->pmap, bigobj, desired);
+		vm_swapout_object_deactivate(map, map->pmap, bigobj, desired);
 		VM_OBJECT_RUNLOCK(bigobj);
 	}
 	/*
@@ -360,7 +378,7 @@ vm_swapout_map_deactivate_pages(vm_map_t map, long desired)
 			obj = tmpe->object.vm_object;
 			if (obj != NULL) {
 				VM_OBJECT_RLOCK(obj);
-				vm_swapout_object_deactivate(map->pmap, obj,
+				vm_swapout_object_deactivate(map, map->pmap, obj,
 				    desired);
 				VM_OBJECT_RUNLOCK(obj);
 			}

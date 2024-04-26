@@ -946,7 +946,7 @@ long
 vmspace_resident_count(struct vmspace *vmspace)
 {
 	// TODO(shaurp): Does this require locking?
-	return vmspace->vm_map->active_prefetched_pages + pmap_resident_count(vmspace_pmap(vmspace));
+	return vmspace->vm_map.active_prefetched_pages + pmap_resident_count(vmspace_pmap(vmspace));
 }
 
 /*

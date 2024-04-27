@@ -561,8 +561,11 @@ static int vm_cheri_readahead(struct faultstate *fs) {
 				p = vm_page_alloc(obj, pindex,
 					VM_ALLOC_NORMAL);
 			
-				if(p == NULL)
-					break;
+				if (p == NULL) {
+					
+					vm_map_lookup_done(fs->map, entry);
+					continue;
+				}
 
 				p->oflags |= VPO_SWAPINPROG;
 				vm_object_pip_add(obj, 1);

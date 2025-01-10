@@ -1708,7 +1708,7 @@ vm_fault_getpages(struct faultstate *fs, int *behindp, int *aheadp)
 	*behindp = behind;
 	*aheadp = ahead;
 	rv = vm_pager_get_pages(fs->object, &fs->m, 1, behindp, aheadp);
-	fs->vm_map->active_prefetched_pages = *behindp + *aheadp;
+	fs->map->active_prefetched_pages = *behindp + *aheadp;
 	if (vm_cnt.v_cheri_prefetch==1 && (rv == VM_PAGER_OK && 
 				fs->object->type == OBJT_SWAP && 
 				!P_KILLED(curproc) && 

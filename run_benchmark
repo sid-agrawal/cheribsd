@@ -1,0 +1,3 @@
+time ./pointers_5G_with_delay
+cd /usr/obj/usr/home/spatel/cheribsd/arm64.aarch64/cheri_prefetch
+sudo kldload ./cheri_prefetch.ko

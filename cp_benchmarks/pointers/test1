@@ -1,0 +1,3 @@
+Traversal
+Done
+{"Test": "ll","CPEnabled": 1,"NumNodes": 1048576,"Delay": 0,"ApproxMemoryConsumptionMB": 0,"vm.v_prefetches": 1026325,"vm.v_majorfault": 1044789,"vm.v_softfault": 1030364,"vm.v_majorfault_latency": 10,"vm.v_async_io_latency": 1312909235,"vm.v_prefetch_latency": 0,"vm.v_blocked_softfault": 1026057,"ConstructionSecond": 770,"TraversalSecond": 593}
